@@ -32,9 +32,15 @@ export const beautifyPortrait = async (base64Image: string) => {
       },
     });
     
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+    // Thêm kiểm tra an toàn cho response.candidates
+    const candidate = response.candidates?.[0];
+    const parts = candidate?.content?.parts;
+    
+    if (parts) {
+      for (const part of parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
       }
     }
     return base64Image;
