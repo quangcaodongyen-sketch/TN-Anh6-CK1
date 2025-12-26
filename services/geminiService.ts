@@ -18,7 +18,7 @@ export const getAIExtraExplanation = async (question: string, answer: string, un
 };
 
 export const beautifyPortrait = async (base64Image: string) => {
-  if (!API_KEY) return base64Image; // Trả về ảnh gốc nếu không có key
+  if (!API_KEY) return base64Image;
   
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   try {
@@ -27,16 +27,15 @@ export const beautifyPortrait = async (base64Image: string) => {
       contents: {
         parts: [
           { inlineData: { data: base64Image.split(',')[1], mimeType: 'image/jpeg' } },
-          { text: "Hãy chỉnh sửa ảnh này thành ảnh thẻ học sinh chuyên nghiệp. YÊU CẦU NGHIÊM NGẶT: 1. Giữ nguyên khuôn mặt gốc, giới tính, các đặc điểm nhận dạng và biểu cảm của người trong ảnh. 2. Làm mịn da nhẹ nhàng (retouch) để giữ được nét tự nhiên. 3. Điều chỉnh ánh sáng sao cho mặt sáng đều, phông nền phía sau sạch sẽ (màu xanh hoặc trắng). 4. Thay trang phục thành đồng phục học sinh Việt Nam (áo sơ mi trắng có cổ) chỉnh tề, ngay ngắn. Tuyệt đối không thay đổi cấu trúc khuôn mặt." }
+          { text: "TRANSFORM this image into a professional Vietnamese student ID photo. STRICT REQUIREMENTS: 1. KEEP THE ORIGINAL FACE 100% UNCHANGED (do not modify facial features, eyes, nose, mouth, or facial structure). 2. PROFESSIONAL RETOUCH: Smooth skin naturally, remove small blemishes, and brighten the eyes. 3. LIGHTING: Adjust to bright, even studio lighting. 4. ATTIRE: Replace the person's current clothes with a clean, formal white button-up student shirt with a collar (áo sơ mi trắng học sinh có cổ). 5. BACKGROUND: Use a solid light blue background. Output ONLY the resulting image." }
         ]
       },
     });
     
-    // Thêm kiểm tra an toàn cho response.candidates
     const candidate = response.candidates?.[0];
     const parts = candidate?.content?.parts;
     
-    if (parts) {
+    if (parts && parts.length > 0) {
       for (const part of parts) {
         if (part.inlineData) {
           return `data:image/png;base64,${part.inlineData.data}`;
