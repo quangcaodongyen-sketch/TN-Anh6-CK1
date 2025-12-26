@@ -1,5 +1,7 @@
 {
   "name": "Trắc nghiệm Anh 6 cuối kỳ 1",
   "description": "An interactive and engaging quiz app designed for Grade 6 students to practice for their Semester 1 English exam based on the Global Success curriculum.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }

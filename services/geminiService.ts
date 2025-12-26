@@ -4,17 +4,42 @@ import { GoogleGenAI } from "@google/genai";
 const API_KEY = process.env.API_KEY || "";
 
 export const getAIExtraExplanation = async (question: string, answer: string, unit: string) => {
-  if (!API_KEY) return "AI explanation is unavailable (API Key missing).";
-
+  if (!API_KEY) return "AI explanation is unavailable.";
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Bạn là một giáo viên tiếng Anh nhiệt huyết. Hãy giải thích ngắn gọn (tối đa 3 câu) bằng tiếng Việt cho học sinh lớp 6 về ngữ pháp hoặc từ vựng của câu hỏi sau: "${question}". Đáp án đúng là: "${answer}". Câu hỏi thuộc chương trình English 6 Global Success, ${unit}.`,
+      contents: `Bạn là giáo viên tiếng Anh Đinh Văn Thành. Hãy giải thích ngắn (1-2 câu) bằng tiếng Việt cho học sinh lớp 6 về câu: "${question}". Đáp án đúng: "${answer}". Nội dung: Global Success, ${unit}.`,
     });
-    return response.text || "Xin lỗi, mình không thể tìm thấy giải thích lúc này.";
+    return response.text || "Học tốt nhé em!";
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Hệ thống AI đang bận, bạn hãy xem phần giải thích có sẵn nhé!";
+    return "Hãy chú ý cấu trúc này nhé!";
+  }
+};
+
+export const beautifyPortrait = async (base64Image: string) => {
+  if (!API_KEY) return base64Image; // Trả về ảnh gốc nếu không có key
+  
+  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          { inlineData: { data: base64Image.split(',')[1], mimeType: 'image/jpeg' } },
+          { text: "Hãy chỉnh sửa ảnh này thành ảnh thẻ học sinh chuyên nghiệp. YÊU CẦU NGHIÊM NGẶT: 1. Giữ nguyên khuôn mặt gốc, giới tính, các đặc điểm nhận dạng và biểu cảm của người trong ảnh. 2. Làm mịn da nhẹ nhàng (retouch) để giữ được nét tự nhiên. 3. Điều chỉnh ánh sáng sao cho mặt sáng đều, phông nền phía sau sạch sẽ (màu xanh hoặc trắng). 4. Thay trang phục thành đồng phục học sinh Việt Nam (áo sơ mi trắng có cổ) chỉnh tề, ngay ngắn. Tuyệt đối không thay đổi cấu trúc khuôn mặt." }
+        ]
+      },
+    });
+    
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    return base64Image;
+  } catch (error) {
+    console.error("Beautify Error:", error);
+    return base64Image;
   }
 };
