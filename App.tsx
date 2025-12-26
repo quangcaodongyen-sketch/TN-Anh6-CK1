@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Question } from './types';
 import { POOL_U1_3, POOL_U4_6 } from './constants';
 import { beautifyPortrait } from './services/geminiService';
@@ -43,9 +43,38 @@ const App: React.FC = () => {
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'NONE' | 'CORRECT' | 'WRONG'>('NONE');
   const [feedbackMsg, setFeedbackMsg] = useState('');
+  const [timeLeft, setTimeLeft] = useState(1200); // 20 minutes in seconds
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (phase === 'QUIZ' && timeLeft > 0) {
+      timerRef.current = window.setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            setPhase('CERT');
+            playSound('final');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [phase]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
   const playSound = (type: keyof typeof SOUNDS) => {
     if (audioRef.current) audioRef.current.src = SOUNDS[type];
@@ -53,10 +82,12 @@ const App: React.FC = () => {
   };
 
   const startQuiz = () => {
+    if (!processedPhoto) return; 
     const q13 = SHUFFLE(POOL_U1_3, 4);
     const q46 = SHUFFLE(POOL_U4_6, 16);
     const combined = [...q13, ...q46].sort(() => Math.random() - 0.5);
     setQuestions(combined);
+    setTimeLeft(1200);
     setPhase('QUIZ');
     setCurrentIdx(0);
     setScore(0);
@@ -123,7 +154,6 @@ const App: React.FC = () => {
     ctx.lineWidth = 25;
     ctx.strokeRect(30, 30, 1140, 740);
 
-    // Photo Placement - TOP RIGHT area
     const finalPhoto = processedPhoto || userPhoto;
     if (finalPhoto) {
       const img = new Image();
@@ -277,13 +307,14 @@ const App: React.FC = () => {
 
               <div className="pt-2">
                 {!processedPhoto && !isProcessing && (
-                  <p className="text-amber-600 text-[10px] font-black uppercase mb-4 animate-pulse">
-                    ⚠️ Nhấn "Tạo ảnh thẻ AI" để có giấy chứng nhận đẹp nhất!
+                  <p className="text-rose-600 text-[10px] font-black uppercase mb-4 animate-pulse">
+                    ⚠️ Phải nhấn "Tạo ảnh thẻ AI" để tiếp tục!
                   </p>
                 )}
                 <button 
                   onClick={startQuiz} 
-                  className={`w-full py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-widest transition-all ${processedPhoto ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'}`}
+                  disabled={!processedPhoto || isProcessing}
+                  className={`w-full py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-widest transition-all ${processedPhoto ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
                 >
                   Bắt đầu ôn luyện 🚀
                 </button>
@@ -295,6 +326,18 @@ const App: React.FC = () => {
 
       {phase === 'QUIZ' && (
         <div className="w-full max-w-sm md:max-w-xl animate-in slide-in-from-bottom-10">
+           <div className="flex justify-between items-center mb-4 px-4 bg-white/60 backdrop-blur-md py-2 rounded-2xl border border-white shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">⏱️</span>
+                  <span className={`font-black text-lg ${timeLeft < 60 ? 'text-rose-600 animate-pulse' : 'text-slate-700'}`}>
+                    {formatTime(timeLeft)}
+                  </span>
+                </div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Thí sinh: {userName}
+                </div>
+           </div>
+           
            <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-b-8 border-sky-100">
                 <div className="h-3 bg-slate-100 w-full relative">
                     <div className="h-full bg-sky-500 transition-all duration-700" style={{width: `${((currentIdx+1)/questions.length)*100}%`}} />
@@ -304,23 +347,41 @@ const App: React.FC = () => {
                         <span className="px-4 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-black uppercase tracking-widest">{questions[currentIdx].unit}</span>
                         <span className="font-black text-slate-300 text-sm">Câu {currentIdx + 1}/{questions.length}</span>
                     </div>
-                    <h3 className="text-xl md:text-2xl font-black text-slate-800 mb-8 leading-tight">
+                    <h3 className="text-xl md:text-2xl font-black text-indigo-950 mb-8 leading-tight">
                         {questions[currentIdx].question}
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         {questions[currentIdx].options.map((opt, i) => {
                             const isCorrect = i === questions[currentIdx].correctAnswer;
-                            let btnStyle = "w-full p-5 text-left rounded-2xl border-2 font-bold transition-all flex items-center gap-4 ";
-                            if (feedback === 'NONE') btnStyle += "border-slate-50 bg-slate-50 hover:border-sky-300 hover:bg-white active:scale-98 shadow-sm";
-                            else if (isCorrect) btnStyle += "border-emerald-500 bg-emerald-50 text-emerald-800 animate-correct shadow-inner";
-                            else btnStyle += "border-slate-100 bg-white opacity-40";
+                            
+                            const bgColors = [
+                              "bg-blue-50 border-blue-200 hover:bg-blue-100",
+                              "bg-amber-50 border-amber-200 hover:bg-amber-100",
+                              "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
+                              "bg-rose-50 border-rose-200 hover:bg-rose-100"
+                            ];
+                            const letterColors = [
+                              "bg-blue-500 text-white",
+                              "bg-amber-500 text-white",
+                              "bg-emerald-500 text-white",
+                              "bg-rose-500 text-white"
+                            ];
+
+                            let btnStyle = `w-full p-5 text-left rounded-2xl border-2 font-bold transition-all flex items-center gap-4 shadow-sm `;
+                            if (feedback === 'NONE') {
+                              btnStyle += `${bgColors[i % bgColors.length]} active:scale-98`;
+                            } else if (isCorrect) {
+                              btnStyle += "border-emerald-500 bg-emerald-100 text-emerald-900 animate-correct shadow-inner";
+                            } else {
+                              btnStyle += "border-slate-100 bg-white opacity-40";
+                            }
 
                             return (
                                 <button key={i} onClick={() => handleAnswer(i)} disabled={feedback !== 'NONE'} className={btnStyle}>
-                                    <span className={`w-8 h-8 min-w-[2rem] rounded-lg flex items-center justify-center text-xs font-black ${feedback === 'NONE' ? 'bg-white text-slate-400' : isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100'}`}>
+                                    <span className={`w-10 h-10 min-w-[2.5rem] rounded-xl flex items-center justify-center text-sm font-black shadow-md ${feedback === 'NONE' ? letterColors[i % letterColors.length] : isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
                                         {String.fromCharCode(65+i)}
                                     </span>
-                                    {opt}
+                                    <span className="text-slate-800">{opt}</span>
                                 </button>
                             );
                         })}
@@ -344,12 +405,11 @@ const App: React.FC = () => {
                 </div>
            </div>
            
-           {/* New Mobile-Responsive Certificate Display (No extreme scaling) */}
            <div className="w-full max-w-md bg-[#fffdf0] rounded-xl border-[12px] border-[#c5a059] p-4 shadow-2xl relative overflow-hidden">
                 <div className="absolute -top-4 -left-4 w-12 h-12 border-4 border-rose-500/20 rounded-full opacity-30"></div>
                 
                 <div className="text-center mb-6 pr-4">
-                    <h1 className="text-2xl font-bold text-[#8b4513] cert-font leading-tight">GIẤY CHỨNG NHẬN</h1>
+                    <h1 className="text-2xl font-bold text-[#8b4513] cert-font leading-tight uppercase">Giấy Chứng Nhận</h1>
                     <p className="text-[10px] italic text-slate-400 font-serif">Khen ngợi nỗ lực học tập xuất sắc - HK1</p>
                 </div>
                 
@@ -362,14 +422,14 @@ const App: React.FC = () => {
                         
                         <div className="bg-white/70 p-4 rounded-3xl border-2 border-[#c5a059]/20 shadow-sm inline-block">
                             <p className="text-[10px] font-bold text-slate-500 mb-1">Điểm số đạt được:</p>
-                            <p className="text-3xl font-black text-emerald-600 leading-none">{score}/{questions.length}</p>
+                            <p className="text-3xl font-black text-emerald-600 leading-none">{score}/{questions.length || 20}</p>
                         </div>
                     </div>
 
                     <div className="shrink-0">
                         <div className="bg-white p-1 shadow-md border-2 border-[#c5a059]/20 rotate-1">
-                            {(processedPhoto || userPhoto) ? (
-                                <img src={processedPhoto || userPhoto || ""} className="w-20 aspect-[3/4] object-cover" />
+                            {processedPhoto ? (
+                                <img src={processedPhoto} className="w-20 aspect-[3/4] object-cover" />
                             ) : (
                                 <div className="w-20 aspect-[3/4] bg-slate-100 flex items-center justify-center text-[8px] text-slate-300 font-bold uppercase">No Photo</div>
                             )}
@@ -380,7 +440,7 @@ const App: React.FC = () => {
                 <div className="flex justify-between items-end mt-4">
                     <div className="opacity-40">
                          <div className="w-16 h-16 border-4 border-rose-500 rounded-full flex items-center justify-center text-[6px] font-black text-rose-500 -rotate-12 border-dashed">
-                            <span className="text-center">ENGLISH<br/>APPROVED</span>
+                            <span className="text-center font-bold">ENGLISH<br/>APPROVED</span>
                         </div>
                     </div>
                     <div className="text-right">
@@ -401,7 +461,7 @@ const App: React.FC = () => {
                     <button onClick={startQuiz} className="bg-sky-600 text-white py-4 rounded-2xl font-black text-sm shadow-md active:scale-95 transition-all">
                         LUYỆN LẠI ⚔️
                     </button>
-                    <button onClick={() => window.location.reload()} className="bg-white border-2 border-slate-200 text-slate-400 py-4 rounded-2xl font-black text-sm active:scale-95">
+                    <button onClick={() => window.location.reload()} className="bg-white border-2 border-slate-200 text-slate-400 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all">
                         THOÁT 🔄
                     </button>
                 </div>
