@@ -28,15 +28,15 @@ export const beautifyPortrait = async (base64Image: string) => {
         parts: [
           { inlineData: { data: base64Image.split(',')[1], mimeType: 'image/jpeg' } },
           { 
-            text: `TRANSFORM this person into a professional Vietnamese student ID photo. 
-            STRICT CONSTRAINTS:
-            1. FACE PRESERVATION: KEEP THE ORIGINAL FACE 100% EXACTLY AS IS. Do not change the shape of eyes, nose, mouth, or bone structure. The person must be perfectly recognizable.
-            2. BEAUTIFICATION: Apply professional high-end retouching. Smooth skin naturally, remove blemishes/acne, even out skin tone, and subtly brighten the eyes for a fresh, energetic look.
-            3. ATTIRE: Replace current clothing with a clean, crisp, formal white Vietnamese student button-up shirt with a neat collar (áo sơ mi trắng học sinh có cổ).
-            4. GROOMING: Make the hair look neat and tidy, ensuring ears are visible if possible, and eyes are looking directly at the camera.
-            5. COMPOSITION: Solid light blue background (standard for VN ID photos). Lighting should be bright, balanced studio lighting.
-            6. AESTHETICS: Make the student look at their absolute best—neat, smart, and handsome/beautiful to encourage their learning spirit.
-            Output ONLY the final image data.`
+            text: `TRANSFORM this image into a professional, perfect Vietnamese student ID photo. 
+            CORE INSTRUCTIONS:
+            1. FACE: KEEP THE ORIGINAL FACE 100% RECOGNIZABLE. Do not change facial structure, eyes, nose, or mouth shape. 
+            2. BEAUTIFY: Apply professional "high-end" skin retouching. Make the skin look perfectly smooth, bright, and glowing naturally. Remove all blemishes, acne, and dark circles.
+            3. ATTIRE: Replace the current outfit with a crisp, clean, formal white Vietnamese student button-up shirt (áo sơ mi trắng có cổ). It should look ironed and neat.
+            4. GROOMING: Make the hair look very tidy and well-groomed. Ensure eyes are bright and looking directly at the camera.
+            5. COMPOSITION: Use a solid, standard light blue background (ID photo style). Lighting must be bright, professional studio lighting that makes the student look energetic and smart.
+            6. VIBE: The student should look very beautiful/handsome, neat, and ready for school to encourage their learning spirit.
+            Output ONLY the final processed image data.`
           }
         ]
       },

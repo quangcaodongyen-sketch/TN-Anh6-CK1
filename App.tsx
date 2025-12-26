@@ -1,8 +1,8 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { QuizState, Question } from './types';
+import React, { useState, useRef } from 'react';
+import { Question } from './types';
 import { POOL_U1_3, POOL_U4_6 } from './constants';
-import { getAIExtraExplanation, beautifyPortrait } from './services/geminiService';
+import { beautifyPortrait } from './services/geminiService';
 
 const SHUFFLE = <T,>(arr: T[], count: number): T[] => {
   return [...arr].sort(() => Math.random() - 0.5).slice(0, count);
@@ -37,8 +37,6 @@ const App: React.FC = () => {
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [processedPhoto, setProcessedPhoto] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cameraMode, setCameraMode] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
   
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -46,8 +44,6 @@ const App: React.FC = () => {
   const [feedback, setFeedback] = useState<'NONE' | 'CORRECT' | 'WRONG'>('NONE');
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,43 +89,6 @@ const App: React.FC = () => {
     }, 2500); 
   };
 
-  const initCamera = async () => {
-    setCameraMode(true);
-    setCameraError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user' } 
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => videoRef.current?.play();
-      }
-    } catch (err) {
-      setCameraError("Không thể truy cập Camera.");
-    }
-  };
-
-  const takePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext('2d');
-      canvasRef.current.width = videoRef.current.videoWidth;
-      canvasRef.current.height = videoRef.current.videoHeight;
-      context?.drawImage(videoRef.current, 0, 0);
-      const data = canvasRef.current.toDataURL('image/jpeg');
-      setUserPhoto(data);
-      setProcessedPhoto(data);
-      stopCamera();
-    }
-  };
-
-  const stopCamera = () => {
-    const stream = videoRef.current?.srcObject as MediaStream;
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-    }
-    setCameraMode(false);
-  };
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -137,7 +96,7 @@ const App: React.FC = () => {
       reader.onload = (event) => {
         const data = event.target?.result as string;
         setUserPhoto(data);
-        setProcessedPhoto(data);
+        setProcessedPhoto(null); // Reset processed photo when new image is uploaded
       };
       reader.readAsDataURL(file);
     }
@@ -194,7 +153,10 @@ const App: React.FC = () => {
     ctx.fillStyle = '#1a237e';
     ctx.fillText('Đinh Văn Thành', 1100, 680);
 
-    if (processedPhoto) {
+    // Use processed photo if available, otherwise raw user photo
+    const finalPhoto = processedPhoto || userPhoto;
+
+    if (finalPhoto) {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
@@ -212,7 +174,7 @@ const App: React.FC = () => {
         link.href = canvas.toDataURL('image/png');
         link.click();
       };
-      img.src = processedPhoto;
+      img.src = finalPhoto;
     } else {
       const link = document.createElement('a');
       link.download = `ChungNhan_${userName}_Anh6.png`;
@@ -224,7 +186,6 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-start p-4 md:p-10 font-sans selection:bg-sky-200">
       <audio ref={audioRef} />
-      <canvas ref={canvasRef} className="hidden" />
 
       {phase === 'REG' && (
         <div className="w-full max-w-sm bg-white p-8 rounded-[3rem] shadow-2xl mt-10 border-b-8 border-sky-200 animate-in fade-in slide-in-from-top-4">
@@ -267,50 +228,66 @@ const App: React.FC = () => {
           
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
 
-          {!userPhoto && !cameraMode ? (
+          {!userPhoto ? (
             <div className="grid grid-cols-1 gap-4">
               <button 
-                onClick={initCamera}
-                className="w-full py-8 bg-sky-50 text-sky-600 rounded-3xl border-4 border-dashed border-sky-200 flex flex-col items-center gap-3 active:scale-95 transition-all"
-              >
-                <span className="text-4xl">📸</span>
-                <span className="font-black text-sm uppercase">Chụp ảnh mới</span>
-              </button>
-              <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full py-8 bg-indigo-50 text-indigo-600 rounded-3xl border-4 border-dashed border-indigo-200 flex flex-col items-center gap-3 active:scale-95 transition-all"
+                className="w-full py-16 bg-sky-50 text-sky-600 rounded-3xl border-4 border-dashed border-sky-200 flex flex-col items-center gap-4 active:scale-95 transition-all"
               >
-                <span className="text-4xl">🖼️</span>
-                <span className="font-black text-sm uppercase">Chọn từ thư viện</span>
+                <span className="text-6xl">📸</span>
+                <span className="font-black text-sm uppercase">Tải ảnh hoặc Chụp ảnh</span>
               </button>
-            </div>
-          ) : cameraMode ? (
-            <div className="relative rounded-[2rem] overflow-hidden bg-black aspect-[3/4] shadow-inner">
-               <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover mirror" />
-               <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4 px-10">
-                    <button onClick={() => setCameraMode(false)} className="bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold uppercase">Hủy</button>
-                    <button onClick={takePhoto} className="w-16 h-16 bg-white rounded-full border-8 border-sky-500 shadow-xl active:scale-90 transition-transform"></button>
-               </div>
+              <p className="text-slate-400 text-[11px] font-bold">Lưu ý: Hãy chọn ảnh rõ mặt để AI xử lý đẹp nhất</p>
             </div>
           ) : (
             <div className="space-y-6">
               <div className="relative inline-block rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white aspect-[3/4] w-full bg-slate-100">
-                <img src={processedPhoto!} alt="User" className="w-full h-full object-cover" />
+                <img src={processedPhoto || userPhoto} alt="User" className="w-full h-full object-cover" />
                 {isProcessing && (
                   <div className="absolute inset-0 bg-sky-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white p-6">
                     <div className="w-12 h-12 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <span className="font-black text-[13px] tracking-widest uppercase text-center leading-relaxed">
                       AI đang xử lý chuyên nghiệp...<br/>
-                      <span className="text-sky-300 text-[10px]">Giữ 100% mặt gốc & Thay sơ mi học sinh</span>
+                      <span className="text-sky-300 text-[10px]">Làm đẹp da & Thay sơ mi học sinh</span>
                     </span>
                   </div>
                 )}
+                {processedPhoto && !isProcessing && (
+                  <div className="absolute top-4 right-4 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-black shadow-lg animate-bounce">
+                    ĐÃ SẴN SÀNG ✨
+                  </div>
+                )}
               </div>
+              
               <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => {setUserPhoto(null); setCameraMode(false);}} className="p-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase active:scale-95 transition-all">Chọn lại</button>
-                <button onClick={handleBeautify} disabled={isProcessing} className="p-4 bg-sky-600 text-white rounded-2xl font-black text-xs uppercase shadow-md active:scale-95 transition-all hover:bg-sky-700">Tạo ảnh thẻ AI ✨</button>
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="p-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase active:scale-95 transition-all"
+                >
+                  Chọn lại
+                </button>
+                <button 
+                  onClick={handleBeautify} 
+                  disabled={isProcessing} 
+                  className="p-4 bg-sky-600 text-white rounded-2xl font-black text-xs uppercase shadow-md active:scale-95 transition-all hover:bg-sky-700 disabled:opacity-50"
+                >
+                  Tạo ảnh thẻ AI ✨
+                </button>
               </div>
-              <button onClick={startQuiz} className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-widest">Bắt đầu thi đấu! 🚀</button>
+
+              <div className="pt-2">
+                {!processedPhoto && !isProcessing && (
+                  <p className="text-amber-600 text-[10px] font-black uppercase mb-4 animate-pulse">
+                    ⚠️ Nhấn "Tạo ảnh thẻ AI" để có giấy chứng nhận đẹp nhất!
+                  </p>
+                )}
+                <button 
+                  onClick={startQuiz} 
+                  className={`w-full py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-widest transition-all ${processedPhoto ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'}`}
+                >
+                  Bắt đầu ôn luyện 🚀
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -395,8 +372,8 @@ const App: React.FC = () => {
 
                         <div className="relative pt-10">
                             <div className="bg-white p-4 shadow-2xl border-4 border-[#c5a059]/20 rotate-2">
-                                {processedPhoto ? (
-                                    <img src={processedPhoto} className="w-48 aspect-[3/4] object-cover" />
+                                {(processedPhoto || userPhoto) ? (
+                                    <img src={processedPhoto || userPhoto || ""} className="w-48 aspect-[3/4] object-cover" />
                                 ) : (
                                     <div className="w-48 aspect-[3/4] bg-slate-100 flex items-center justify-center text-slate-300 font-bold uppercase">No Photo</div>
                                 )}
