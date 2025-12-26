@@ -96,7 +96,7 @@ const App: React.FC = () => {
       reader.onload = (event) => {
         const data = event.target?.result as string;
         setUserPhoto(data);
-        setProcessedPhoto(null); // Reset processed photo when new image is uploaded
+        setProcessedPhoto(null);
       };
       reader.readAsDataURL(file);
     }
@@ -123,39 +123,8 @@ const App: React.FC = () => {
     ctx.lineWidth = 25;
     ctx.strokeRect(30, 30, 1140, 740);
 
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#8b4513';
-    ctx.font = 'bold 70px "Playfair Display"';
-    ctx.fillText('GIẤY CHỨNG NHẬN', 550, 160);
-
-    ctx.font = 'italic 25px "Quicksand"';
-    ctx.fillText('Khen ngợi nỗ lực học tập xuất sắc - HK1', 550, 210);
-
-    ctx.fillStyle = '#d32f2f';
-    ctx.font = 'bold 60px "Quicksand"';
-    ctx.fillText(userName.toUpperCase(), 550, 310);
-
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 35px "Quicksand"';
-    ctx.fillText(`Lớp: ${userClass}`, 550, 370);
-
-    ctx.font = '26px "Quicksand"';
-    ctx.fillText('Đã chinh phục thành công 20 thử thách tiếng Anh 6', 550, 430);
-    ctx.font = 'bold 45px "Quicksand"';
-    ctx.fillStyle = '#1a237e';
-    ctx.fillText(`SCORE: ${score}/${questions.length} (${Math.round(score/2)} điểm)`, 550, 500);
-
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#333';
-    ctx.font = 'bold 20px "Quicksand"';
-    ctx.fillText('GIÁO VIÊN BỘ MÔN', 1100, 620);
-    ctx.font = '45px "Dancing Script"';
-    ctx.fillStyle = '#1a237e';
-    ctx.fillText('Đinh Văn Thành', 1100, 680);
-
-    // Use processed photo if available, otherwise raw user photo
+    // Photo Placement - TOP RIGHT area
     const finalPhoto = processedPhoto || userPhoto;
-
     if (finalPhoto) {
       const img = new Image();
       img.crossOrigin = "anonymous";
@@ -168,14 +137,45 @@ const App: React.FC = () => {
         ctx.strokeRect(920, 60, 220, 280);
         ctx.drawImage(img, 930, 70, 200, 260);
         ctx.restore();
-        
-        const link = document.createElement('a');
-        link.download = `ChungNhan_${userName}_Anh6.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+        continueDrawing();
       };
       img.src = finalPhoto;
     } else {
+      continueDrawing();
+    }
+
+    function continueDrawing() {
+      if (!ctx) return;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#8b4513';
+      ctx.font = 'bold 70px "Playfair Display"';
+      ctx.fillText('GIẤY CHỨNG NHẬN', 550, 160);
+
+      ctx.font = 'italic 25px "Quicksand"';
+      ctx.fillText('Khen ngợi nỗ lực học tập xuất sắc - HK1', 550, 210);
+
+      ctx.fillStyle = '#d32f2f';
+      ctx.font = 'bold 60px "Quicksand"';
+      ctx.fillText(userName.toUpperCase(), 550, 310);
+
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 35px "Quicksand"';
+      ctx.fillText(`Lớp: ${userClass}`, 550, 370);
+
+      ctx.font = '26px "Quicksand"';
+      ctx.fillText('Đã chinh phục thành công 20 thử thách tiếng Anh 6', 550, 430);
+      ctx.font = 'bold 45px "Quicksand"';
+      ctx.fillStyle = '#1a237e';
+      ctx.fillText(`SCORE: ${score}/${questions.length} (${Math.round(score/2)} điểm)`, 550, 500);
+
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 20px "Quicksand"';
+      ctx.fillText('GIÁO VIÊN BỘ MÔN', 1100, 620);
+      ctx.font = '45px "Dancing Script"';
+      ctx.fillStyle = '#1a237e';
+      ctx.fillText('Đinh Văn Thành', 1100, 680);
+
       const link = document.createElement('a');
       link.download = `ChungNhan_${userName}_Anh6.png`;
       link.href = canvas.toDataURL('image/png');
@@ -338,72 +338,75 @@ const App: React.FC = () => {
 
       {phase === 'CERT' && (
         <div className="w-full flex flex-col items-center justify-center animate-in fade-in duration-1000 mb-20 px-4">
-           <div className="w-full max-w-sm mb-6 text-center">
+           <div className="w-full max-w-sm mb-4 text-center">
                 <div className="inline-block px-8 py-3 bg-amber-400 text-white rounded-full font-black text-sm shadow-xl animate-bounce">
                     XUẤT SẮC HOÀN THÀNH! 🏆
                 </div>
            </div>
            
-           <div className="relative w-full flex justify-center items-start h-[45vh] md:h-auto overflow-hidden bg-slate-200 rounded-3xl shadow-inner border-4 border-white">
-                <div className="origin-top scale-[0.28] md:scale-100 transition-transform duration-500" 
-                     style={{ 
-                         width: '1200px', 
-                         height: '800px', 
-                         minWidth: '1200px',
-                         background: '#fffdf0',
-                         border: '25px solid #c5a059',
-                         padding: '60px',
-                         position: 'relative',
-                         boxShadow: '0 50px 100px -20px rgba(0,0,0,0.3)'
-                     }}>
-                    <h1 className="text-8xl text-center font-bold text-[#8b4513] mb-4 cert-font pr-40">GIẤY CHỨNG NHẬN</h1>
-                    <p className="text-center italic text-3xl mb-12 text-slate-400 font-serif pr-40">Khen ngợi nỗ lực học tập xuất sắc - Học kỳ 1</p>
-                    
-                    <div className="flex justify-between items-start px-10">
-                        <div className="flex-1 pt-10 text-center pr-20">
-                            <h2 className="text-8xl font-black text-rose-700 mb-6 underline decoration-[#c5a059]/30 underline-offset-[25px]">{userName.toUpperCase()}</h2>
-                            <p className="text-5xl font-black text-slate-700 mb-14">Lớp: {userClass}</p>
-                            
-                            <div className="bg-white/70 p-12 rounded-[4rem] border-4 border-[#c5a059]/20 shadow-2xl inline-block">
-                                <p className="text-3xl font-bold text-slate-600 mb-6 italic">Đã chinh phục thành công các thử thách tiếng Anh 6</p>
-                                <p className="text-7xl font-black text-emerald-600 tracking-tighter">SCORE: {score}/{questions.length}</p>
-                            </div>
-                        </div>
-
-                        <div className="relative pt-10">
-                            <div className="bg-white p-4 shadow-2xl border-4 border-[#c5a059]/20 rotate-2">
-                                {(processedPhoto || userPhoto) ? (
-                                    <img src={processedPhoto || userPhoto || ""} className="w-48 aspect-[3/4] object-cover" />
-                                ) : (
-                                    <div className="w-48 aspect-[3/4] bg-slate-100 flex items-center justify-center text-slate-300 font-bold uppercase">No Photo</div>
-                                )}
-                            </div>
+           {/* New Mobile-Responsive Certificate Display (No extreme scaling) */}
+           <div className="w-full max-w-md bg-[#fffdf0] rounded-xl border-[12px] border-[#c5a059] p-4 shadow-2xl relative overflow-hidden">
+                <div className="absolute -top-4 -left-4 w-12 h-12 border-4 border-rose-500/20 rounded-full opacity-30"></div>
+                
+                <div className="text-center mb-6 pr-4">
+                    <h1 className="text-2xl font-bold text-[#8b4513] cert-font leading-tight">GIẤY CHỨNG NHẬN</h1>
+                    <p className="text-[10px] italic text-slate-400 font-serif">Khen ngợi nỗ lực học tập xuất sắc - HK1</p>
+                </div>
+                
+                <div className="flex gap-4 items-start mb-6">
+                    <div className="flex-1 text-center pl-2">
+                        <h2 className="text-2xl font-black text-rose-700 mb-2 underline decoration-[#c5a059]/30 underline-offset-8">
+                            {userName.toUpperCase()}
+                        </h2>
+                        <p className="text-sm font-bold text-slate-700 mb-4">Lớp: {userClass}</p>
+                        
+                        <div className="bg-white/70 p-4 rounded-3xl border-2 border-[#c5a059]/20 shadow-sm inline-block">
+                            <p className="text-[10px] font-bold text-slate-500 mb-1">Điểm số đạt được:</p>
+                            <p className="text-3xl font-black text-emerald-600 leading-none">{score}/{questions.length}</p>
                         </div>
                     </div>
 
-                    <div className="absolute bottom-20 right-20 text-right">
-                        <p className="font-black text-slate-400 mb-20 text-sm uppercase tracking-widest">GIÁO VIÊN BỘ MÔN</p>
-                        <p className="sig-font text-9xl text-indigo-900 absolute -top-12 right-0 w-full opacity-80 -rotate-3 select-none pointer-events-none">Đinh Văn Thành</p>
-                        <p className="mt-14 font-black text-slate-800 border-t-8 border-slate-200 pt-4 px-16 text-5xl uppercase tracking-tighter">Đinh Văn Thành</p>
-                        <div className="absolute -top-16 -left-48 w-44 h-44 border-8 border-rose-500/40 rounded-full flex items-center justify-center text-sm font-black text-rose-500/40 -rotate-12 border-dashed">
-                            <span className="text-center">ENGLISH NINJA<br/>MR. THANH<br/>APPROVED</span>
+                    <div className="shrink-0">
+                        <div className="bg-white p-1 shadow-md border-2 border-[#c5a059]/20 rotate-1">
+                            {(processedPhoto || userPhoto) ? (
+                                <img src={processedPhoto || userPhoto || ""} className="w-20 aspect-[3/4] object-cover" />
+                            ) : (
+                                <div className="w-20 aspect-[3/4] bg-slate-100 flex items-center justify-center text-[8px] text-slate-300 font-bold uppercase">No Photo</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-end mt-4">
+                    <div className="opacity-40">
+                         <div className="w-16 h-16 border-4 border-rose-500 rounded-full flex items-center justify-center text-[6px] font-black text-rose-500 -rotate-12 border-dashed">
+                            <span className="text-center">ENGLISH<br/>APPROVED</span>
+                        </div>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-4">GIÁO VIÊN BỘ MÔN</p>
+                        <div className="relative">
+                            <p className="sig-font text-3xl text-indigo-900 absolute -top-8 right-0 w-full opacity-70 -rotate-3">Đinh Văn Thành</p>
+                            <p className="font-black text-slate-800 border-t-2 border-slate-200 pt-1 text-xs uppercase tracking-tighter">Đinh Văn Thành</p>
                         </div>
                     </div>
                 </div>
            </div>
 
-           <div className="w-full max-w-sm mt-12 space-y-4 px-4">
-                <button onClick={downloadCert} className="w-full bg-emerald-600 text-white py-6 rounded-3xl font-black text-xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
-                    LƯU CHỨNG NHẬN 💾
+           <div className="w-full max-w-sm mt-8 space-y-4">
+                <button onClick={downloadCert} className="w-full bg-emerald-600 text-white py-5 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
+                    LƯU BẢN ĐẸP 💾
                 </button>
-                <button onClick={startQuiz} className="w-full bg-sky-600 text-white py-5 rounded-3xl font-black text-lg shadow-lg active:scale-95 transition-all">
-                    TIẾP TỤC CHINH PHỤC ⚔️
-                </button>
-                <button onClick={() => window.location.reload()} className="w-full bg-white border-2 border-slate-200 text-slate-400 py-4 rounded-3xl font-black text-xs uppercase tracking-widest active:scale-95">
-                    Thi lại từ đầu 🔄
-                </button>
+                <div className="grid grid-cols-2 gap-3">
+                    <button onClick={startQuiz} className="bg-sky-600 text-white py-4 rounded-2xl font-black text-sm shadow-md active:scale-95 transition-all">
+                        LUYỆN LẠI ⚔️
+                    </button>
+                    <button onClick={() => window.location.reload()} className="bg-white border-2 border-slate-200 text-slate-400 py-4 rounded-2xl font-black text-sm active:scale-95">
+                        THOÁT 🔄
+                    </button>
+                </div>
            </div>
-           <p className="mt-10 text-[10px] text-slate-400 font-black uppercase tracking-widest opacity-50 text-center">Global Success • Grade 6 English • Semester 1</p>
+           <p className="mt-8 text-[9px] text-slate-400 font-black uppercase tracking-widest text-center">Học sinh chụp ảnh màn hình hoặc tải bản đẹp để gửi Thầy nhé!</p>
         </div>
       )}
     </div>
