@@ -57,7 +57,6 @@ const App: React.FC = () => {
   };
 
   const startQuiz = () => {
-    // Luôn đảo 50-70% bằng cách chọn ngẫu nhiên từ pool lớn
     const q13 = SHUFFLE(POOL_U1_3, 4);
     const q46 = SHUFFLE(POOL_U4_6, 16);
     const combined = [...q13, ...q46].sort(() => Math.random() - 0.5);
@@ -159,14 +158,12 @@ const App: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Background & Borders
     ctx.fillStyle = '#fffdf0';
     ctx.fillRect(0, 0, 1200, 800);
     ctx.strokeStyle = '#c5a059';
     ctx.lineWidth = 25;
     ctx.strokeRect(30, 30, 1140, 740);
 
-    // Text Content - Centered but away from the right photo area
     ctx.textAlign = 'center';
     ctx.fillStyle = '#8b4513';
     ctx.font = 'bold 70px "Playfair Display"';
@@ -189,7 +186,6 @@ const App: React.FC = () => {
     ctx.fillStyle = '#1a237e';
     ctx.fillText(`SCORE: ${score}/${questions.length} (${Math.round(score/2)} điểm)`, 550, 500);
 
-    // Signature Box
     ctx.textAlign = 'right';
     ctx.fillStyle = '#333';
     ctx.font = 'bold 20px "Quicksand"';
@@ -198,7 +194,6 @@ const App: React.FC = () => {
     ctx.fillStyle = '#1a237e';
     ctx.fillText('Đinh Văn Thành', 1100, 680);
 
-    // Photo Placement - TOP RIGHT corner
     if (processedPhoto) {
       const img = new Image();
       img.crossOrigin = "anonymous";
@@ -234,12 +229,12 @@ const App: React.FC = () => {
       {phase === 'REG' && (
         <div className="w-full max-w-sm bg-white p-8 rounded-[3rem] shadow-2xl mt-10 border-b-8 border-sky-200 animate-in fade-in slide-in-from-top-4">
           <div className="text-center mb-10">
-            <h1 className="text-4xl font-black text-sky-600 mb-2">TIẾNG ANH 6 📝</h1>
+            <h1 className="text-4xl font-black text-sky-600 mb-2 uppercase">Tiếng Anh 6 📝</h1>
             <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Global Success • Kiểm tra HK1</p>
           </div>
           <div className="space-y-6">
             <div className="group">
-                <label className="block text-xs font-black text-slate-400 mb-2 ml-4">HỌ VÀ TÊN</label>
+                <label className="block text-xs font-black text-slate-400 mb-2 ml-4 uppercase">Họ và tên</label>
                 <input 
                 type="text" placeholder="Ví dụ: Đinh Quang Việt" 
                 className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-sky-500 transition-all outline-none"
@@ -247,7 +242,7 @@ const App: React.FC = () => {
                 />
             </div>
             <div className="group">
-                <label className="block text-xs font-black text-slate-400 mb-2 ml-4">LỚP CỦA EM</label>
+                <label className="block text-xs font-black text-slate-400 mb-2 ml-4 uppercase">Lớp của em</label>
                 <input 
                 type="text" placeholder="Ví dụ: 6A1" 
                 className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-sky-500 transition-all outline-none"
@@ -257,9 +252,9 @@ const App: React.FC = () => {
             <button 
               disabled={!userName || !userClass}
               onClick={() => setPhase('PHOTO')}
-              className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black shadow-lg hover:shadow-sky-200 disabled:opacity-30 transition-all active:scale-95"
+              className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black shadow-lg hover:shadow-sky-200 disabled:opacity-30 transition-all active:scale-95 uppercase tracking-widest"
             >
-              TIẾP THEO ➡️
+              Tiếp theo ➡️
             </button>
           </div>
           <p className="mt-8 text-center text-slate-400 text-[10px] font-black italic">Hệ thống ôn luyện của Thầy Đinh Văn Thành</p>
@@ -268,7 +263,7 @@ const App: React.FC = () => {
 
       {phase === 'PHOTO' && (
         <div className="w-full max-w-sm bg-white p-6 rounded-[3rem] shadow-2xl mt-4 text-center animate-in zoom-in duration-300">
-          <h2 className="text-2xl font-black text-slate-800 mb-6 uppercase">Ảnh Thẻ Học Sinh 🏷️</h2>
+          <h2 className="text-2xl font-black text-slate-800 mb-6 uppercase tracking-tight">Ảnh Thẻ Học Sinh 🏷️</h2>
           
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
 
@@ -279,7 +274,7 @@ const App: React.FC = () => {
                 className="w-full py-8 bg-sky-50 text-sky-600 rounded-3xl border-4 border-dashed border-sky-200 flex flex-col items-center gap-3 active:scale-95 transition-all"
               >
                 <span className="text-4xl">📸</span>
-                <span className="font-black text-sm uppercase">Chụp ảnh ngay</span>
+                <span className="font-black text-sm uppercase">Chụp ảnh mới</span>
               </button>
               <button 
                 onClick={() => fileInputRef.current?.click()}
@@ -294,7 +289,7 @@ const App: React.FC = () => {
                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover mirror" />
                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4 px-10">
                     <button onClick={() => setCameraMode(false)} className="bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold uppercase">Hủy</button>
-                    <button onClick={takePhoto} className="w-16 h-16 bg-white rounded-full border-8 border-sky-500 shadow-xl"></button>
+                    <button onClick={takePhoto} className="w-16 h-16 bg-white rounded-full border-8 border-sky-500 shadow-xl active:scale-90 transition-transform"></button>
                </div>
             </div>
           ) : (
@@ -302,17 +297,20 @@ const App: React.FC = () => {
               <div className="relative inline-block rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white aspect-[3/4] w-full bg-slate-100">
                 <img src={processedPhoto!} alt="User" className="w-full h-full object-cover" />
                 {isProcessing && (
-                  <div className="absolute inset-0 bg-sky-950/80 backdrop-blur-sm flex flex-col items-center justify-center text-white p-4">
-                    <div className="w-10 h-10 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-3"></div>
-                    <span className="font-black text-[12px] tracking-widest uppercase text-center">Đang Retouch AI...<br/>Giữ mặt gốc & Thay áo sơ mi</span>
+                  <div className="absolute inset-0 bg-sky-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white p-6">
+                    <div className="w-12 h-12 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <span className="font-black text-[13px] tracking-widest uppercase text-center leading-relaxed">
+                      AI đang xử lý chuyên nghiệp...<br/>
+                      <span className="text-sky-300 text-[10px]">Giữ 100% mặt gốc & Thay sơ mi học sinh</span>
+                    </span>
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => {setUserPhoto(null); setCameraMode(false);}} className="p-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase">Chọn lại</button>
-                <button onClick={handleBeautify} disabled={isProcessing} className="p-4 bg-sky-600 text-white rounded-2xl font-black text-xs uppercase shadow-md active:scale-95">Làm đẹp AI ✨</button>
+                <button onClick={() => {setUserPhoto(null); setCameraMode(false);}} className="p-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase active:scale-95 transition-all">Chọn lại</button>
+                <button onClick={handleBeautify} disabled={isProcessing} className="p-4 bg-sky-600 text-white rounded-2xl font-black text-xs uppercase shadow-md active:scale-95 transition-all hover:bg-sky-700">Tạo ảnh thẻ AI ✨</button>
               </div>
-              <button onClick={startQuiz} className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-wider">Bắt đầu thi đấu! 🚀</button>
+              <button onClick={startQuiz} className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-widest">Bắt đầu thi đấu! 🚀</button>
             </div>
           )}
         </div>
@@ -320,14 +318,14 @@ const App: React.FC = () => {
 
       {phase === 'QUIZ' && (
         <div className="w-full max-w-sm md:max-w-xl animate-in slide-in-from-bottom-10">
-           <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden">
+           <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-b-8 border-sky-100">
                 <div className="h-3 bg-slate-100 w-full relative">
                     <div className="h-full bg-sky-500 transition-all duration-700" style={{width: `${((currentIdx+1)/questions.length)*100}%`}} />
                 </div>
                 <div className="p-8">
                     <div className="flex justify-between items-center mb-6">
-                        <span className="px-4 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-black">{questions[currentIdx].unit}</span>
-                        <span className="font-black text-slate-300 text-sm">{currentIdx + 1}/{questions.length}</span>
+                        <span className="px-4 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-black uppercase tracking-widest">{questions[currentIdx].unit}</span>
+                        <span className="font-black text-slate-300 text-sm">Câu {currentIdx + 1}/{questions.length}</span>
                     </div>
                     <h3 className="text-xl md:text-2xl font-black text-slate-800 mb-8 leading-tight">
                         {questions[currentIdx].question}
@@ -336,8 +334,8 @@ const App: React.FC = () => {
                         {questions[currentIdx].options.map((opt, i) => {
                             const isCorrect = i === questions[currentIdx].correctAnswer;
                             let btnStyle = "w-full p-5 text-left rounded-2xl border-2 font-bold transition-all flex items-center gap-4 ";
-                            if (feedback === 'NONE') btnStyle += "border-slate-50 bg-slate-50 hover:border-sky-300 hover:bg-white active:scale-98";
-                            else if (isCorrect) btnStyle += "border-emerald-500 bg-emerald-50 text-emerald-800 animate-correct";
+                            if (feedback === 'NONE') btnStyle += "border-slate-50 bg-slate-50 hover:border-sky-300 hover:bg-white active:scale-98 shadow-sm";
+                            else if (isCorrect) btnStyle += "border-emerald-500 bg-emerald-50 text-emerald-800 animate-correct shadow-inner";
                             else btnStyle += "border-slate-100 bg-white opacity-40";
 
                             return (
@@ -369,7 +367,6 @@ const App: React.FC = () => {
                 </div>
            </div>
            
-           {/* Mobile Scaled Preview */}
            <div className="relative w-full flex justify-center items-start h-[45vh] md:h-auto overflow-hidden bg-slate-200 rounded-3xl shadow-inner border-4 border-white">
                 <div className="origin-top scale-[0.28] md:scale-100 transition-transform duration-500" 
                      style={{ 
@@ -396,7 +393,6 @@ const App: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Photo in isolated frame area */}
                         <div className="relative pt-10">
                             <div className="bg-white p-4 shadow-2xl border-4 border-[#c5a059]/20 rotate-2">
                                 {processedPhoto ? (
@@ -412,7 +408,6 @@ const App: React.FC = () => {
                         <p className="font-black text-slate-400 mb-20 text-sm uppercase tracking-widest">GIÁO VIÊN BỘ MÔN</p>
                         <p className="sig-font text-9xl text-indigo-900 absolute -top-12 right-0 w-full opacity-80 -rotate-3 select-none pointer-events-none">Đinh Văn Thành</p>
                         <p className="mt-14 font-black text-slate-800 border-t-8 border-slate-200 pt-4 px-16 text-5xl uppercase tracking-tighter">Đinh Văn Thành</p>
-                        {/* Stamp */}
                         <div className="absolute -top-16 -left-48 w-44 h-44 border-8 border-rose-500/40 rounded-full flex items-center justify-center text-sm font-black text-rose-500/40 -rotate-12 border-dashed">
                             <span className="text-center">ENGLISH NINJA<br/>MR. THANH<br/>APPROVED</span>
                         </div>

@@ -27,7 +27,17 @@ export const beautifyPortrait = async (base64Image: string) => {
       contents: {
         parts: [
           { inlineData: { data: base64Image.split(',')[1], mimeType: 'image/jpeg' } },
-          { text: "TRANSFORM this image into a professional Vietnamese student ID photo. STRICT REQUIREMENTS: 1. KEEP THE ORIGINAL FACE 100% UNCHANGED (do not modify facial features, eyes, nose, mouth, or facial structure). 2. PROFESSIONAL RETOUCH: Smooth skin naturally, remove small blemishes, and brighten the eyes. 3. LIGHTING: Adjust to bright, even studio lighting. 4. ATTIRE: Replace the person's current clothes with a clean, formal white button-up student shirt with a collar (áo sơ mi trắng học sinh có cổ). 5. BACKGROUND: Use a solid light blue background. Output ONLY the resulting image." }
+          { 
+            text: `TRANSFORM this person into a professional Vietnamese student ID photo. 
+            STRICT CONSTRAINTS:
+            1. FACE PRESERVATION: KEEP THE ORIGINAL FACE 100% EXACTLY AS IS. Do not change the shape of eyes, nose, mouth, or bone structure. The person must be perfectly recognizable.
+            2. BEAUTIFICATION: Apply professional high-end retouching. Smooth skin naturally, remove blemishes/acne, even out skin tone, and subtly brighten the eyes for a fresh, energetic look.
+            3. ATTIRE: Replace current clothing with a clean, crisp, formal white Vietnamese student button-up shirt with a neat collar (áo sơ mi trắng học sinh có cổ).
+            4. GROOMING: Make the hair look neat and tidy, ensuring ears are visible if possible, and eyes are looking directly at the camera.
+            5. COMPOSITION: Solid light blue background (standard for VN ID photos). Lighting should be bright, balanced studio lighting.
+            6. AESTHETICS: Make the student look at their absolute best—neat, smart, and handsome/beautiful to encourage their learning spirit.
+            Output ONLY the final image data.`
+          }
         ]
       },
     });
