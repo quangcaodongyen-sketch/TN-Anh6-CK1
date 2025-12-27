@@ -5,9 +5,11 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Vite không tự động đưa process.env vào trình duyệt. 
-    // Dòng này giúp 'process.env.API_KEY' trong code của bạn lấy được giá trị từ Vercel.
+    // Inject API_KEY từ biến môi trường của Vercel vào 'process.env.API_KEY'
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+  },
+  server: {
+    port: 3000
   },
   build: {
     outDir: 'dist',

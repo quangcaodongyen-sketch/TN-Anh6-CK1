@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [processedPhoto, setProcessedPhoto] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -83,7 +84,6 @@ const App: React.FC = () => {
 
   const startQuiz = () => {
     if (!processedPhoto) return; 
-    // Ensure 80% change by picking fresh sets from the pool of 60
     const q13 = SHUFFLE(POOL_U1_3, 8); 
     const q46 = SHUFFLE(POOL_U4_6, 12); 
     const combined = [...q13, ...q46].sort(() => Math.random() - 0.5);
@@ -125,6 +125,7 @@ const App: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setErrorMsg(null);
       const reader = new FileReader();
       reader.onload = (event) => {
         const data = event.target?.result as string;
@@ -138,9 +139,18 @@ const App: React.FC = () => {
   const handleBeautify = async () => {
     if (!userPhoto) return;
     setIsProcessing(true);
-    const result = await beautifyPortrait(userPhoto);
-    setProcessedPhoto(result);
-    setIsProcessing(false);
+    setErrorMsg(null);
+    try {
+      const result = await beautifyPortrait(userPhoto);
+      if (result === userPhoto) {
+        setErrorMsg("AI đang bận hoặc không thể xử lý ảnh này. Em hãy thử lại hoặc dùng ảnh gốc nhé!");
+      }
+      setProcessedPhoto(result);
+    } catch (err) {
+      setErrorMsg("Đã xảy ra lỗi khi tạo ảnh thẻ AI. Em hãy kiểm tra kết nối mạng nhé!");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const downloadCert = () => {
@@ -198,8 +208,8 @@ const App: React.FC = () => {
       ctx.fillText('Đã chinh phục thành công 20 thử thách tiếng Anh 6', 550, 430);
       ctx.font = 'bold 45px "Quicksand"';
       ctx.fillStyle = '#1a237e';
-      const finalScore = Math.round((score/questions.length)*10);
-      ctx.fillText(`SCORE: ${score}/${questions.length} (${finalScore} điểm)`, 550, 500);
+      const finalScore = Math.round((score/(questions.length || 20))*10);
+      ctx.fillText(`SCORE: ${score}/${questions.length || 20} (${finalScore} điểm)`, 550, 500);
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#333';
@@ -289,11 +299,17 @@ const App: React.FC = () => {
                 )}
                 {processedPhoto && !isProcessing && (
                   <div className="absolute top-4 right-4 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-black shadow-lg animate-bounce">
-                    CHUẨN QUY ĐỊNH ✨
+                    XỬ LÝ XONG ✨
                   </div>
                 )}
               </div>
               
+              {errorMsg && (
+                <div className="bg-rose-50 border-2 border-rose-100 p-4 rounded-2xl text-rose-600 text-xs font-bold leading-relaxed">
+                  {errorMsg}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={() => fileInputRef.current?.click()} 
@@ -311,18 +327,17 @@ const App: React.FC = () => {
               </div>
 
               <div className="pt-2">
-                {!processedPhoto && !isProcessing && (
-                  <p className="text-rose-600 text-[10px] font-black uppercase mb-4 animate-pulse">
-                    ⚠️ Phải nhấn "Tạo ảnh thẻ AI" để tiếp tục!
-                  </p>
-                )}
                 <button 
                   onClick={startQuiz} 
-                  disabled={!processedPhoto || isProcessing}
-                  className={`w-full py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-widest transition-all ${processedPhoto ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                  className={`w-full py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-widest transition-all ${userPhoto ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
                 >
                   Bắt đầu ôn luyện 🚀
                 </button>
+                {!processedPhoto && !isProcessing && (
+                  <p className="mt-4 text-slate-400 text-[10px] font-bold">
+                    (Em nên nhấn "Tạo ảnh thẻ AI" để giấy chứng nhận đẹp hơn nhé!)
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -345,18 +360,18 @@ const App: React.FC = () => {
            
            <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-b-8 border-sky-100">
                 <div className="h-3 bg-slate-100 w-full relative">
-                    <div className="h-full bg-sky-500 transition-all duration-700" style={{width: `${((currentIdx+1)/questions.length)*100}%`}} />
+                    <div className="h-full bg-sky-500 transition-all duration-700" style={{width: `${((currentIdx+1)/(questions.length || 20))*100}%`}} />
                 </div>
                 <div className="p-8">
                     <div className="flex justify-between items-center mb-6">
-                        <span className="px-4 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-black uppercase tracking-widest">{questions[currentIdx].unit}</span>
+                        <span className="px-4 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-black uppercase tracking-widest">{questions[currentIdx]?.unit || "Unit"}</span>
                         <span className="font-black text-slate-300 text-sm">Câu {currentIdx + 1}/{questions.length}</span>
                     </div>
                     <h3 className="text-xl md:text-2xl font-black text-indigo-950 mb-8 leading-tight">
-                        {questions[currentIdx].question}
+                        {questions[currentIdx]?.question}
                     </h3>
                     <div className="space-y-4">
-                        {questions[currentIdx].options.map((opt, i) => {
+                        {questions[currentIdx]?.options.map((opt, i) => {
                             const isCorrect = i === questions[currentIdx].correctAnswer;
                             
                             const bgColors = [
@@ -394,7 +409,7 @@ const App: React.FC = () => {
                     {feedback !== 'NONE' && (
                         <div className={`mt-6 p-5 rounded-2xl animate-in zoom-in-50 border-2 ${feedback === 'CORRECT' ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
                             <p className="font-black text-sm mb-2">{feedbackMsg}</p>
-                            <p className="text-xs font-medium text-slate-600 italic leading-relaxed">{questions[currentIdx].explanation}</p>
+                            <p className="text-xs font-medium text-slate-600 italic leading-relaxed">{questions[currentIdx]?.explanation}</p>
                         </div>
                     )}
                 </div>

@@ -1,11 +1,14 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const API_KEY = process.env.API_KEY || "";
-
+/**
+ * Hàm giải thích câu hỏi sử dụng Gemini 3 Flash
+ */
 export const getAIExtraExplanation = async (question: string, answer: string, unit: string) => {
-  if (!API_KEY) return "AI explanation is unavailable.";
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return "AI explanation is unavailable.";
+  
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -13,49 +16,96 @@ export const getAIExtraExplanation = async (question: string, answer: string, un
     });
     return response.text || "Học tốt nhé em!";
   } catch (error) {
+    console.error("Explanation Error:", error);
     return "Hãy chú ý cấu trúc này nhé!";
   }
 };
 
+/**
+ * Hàm tạo ảnh thẻ AI sử dụng Gemini 3 Pro Image (hoặc Flash Image làm fallback)
+ */
 export const beautifyPortrait = async (base64Image: string) => {
-  if (!API_KEY) return base64Image;
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    console.error("API Key is missing for AI Image generation");
+    return base64Image;
+  }
   
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
+  
+  // Xử lý chuỗi base64 để lấy phần data sạch
+  const cleanBase64 = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
+
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-pro-image-preview', // Sử dụng model Pro để xử lý trang phục và khăn quàng chính xác hơn
       contents: {
         parts: [
-          { inlineData: { data: base64Image.split(',')[1], mimeType: 'image/jpeg' } },
           { 
-            text: `TRANSFORM this image into a professional Vietnamese student ID photo for a secondary school student (Grade 6).
+            inlineData: { 
+              data: cleanBase64, 
+              mimeType: 'image/jpeg' 
+            } 
+          },
+          { 
+            text: `TRANSFORM this image into a professional Vietnamese student ID photo.
             
-            STRICT RULES:
-            1. FACE & IDENTITY: The original face must remain 100% recognizable. Do not change facial structure or features. The person must be facing forward, head straight, looking directly at the camera.
-            2. BEAUTIFICATION: Apply subtle professional skin smoothing and natural brightening. Remove temporary blemishes like acne or dark circles. Ensure a natural, clean, and polite appearance.
-            3. ATTIRE: Replace current clothing with a crisp WHITE button-up student shirt (áo sơ mi trắng có cổ) AND a traditional Vietnamese RED SCARF (khăn quàng đỏ) tied neatly around the neck. This is mandatory.
-            4. COMPOSITION: Standard ID photo layout (chest up). Centered. Studio lighting style with no harsh shadows.
-            5. BACKGROUND: Solid light blue background (standard for VN ID cards).
+            STRICT REQUIREMENTS:
+            1. IDENTITY: Keep the child's face 100% recognizable. DO NOT change their natural facial structure, eyes, or mouth.
+            2. POSE: Ensure the person is facing directly forward, head level.
+            3. CLOTHING: Replace current clothes with a formal WHITE Vietnamese student shirt (áo sơ mi trắng có cổ) and a neat RED SCARF (khăn quàng đỏ) around the neck.
+            4. SKIN: Apply very subtle, natural skin smoothing. Keep it looking like a real photo, not a cartoon.
+            5. BACKGROUND: Use a solid, clear light blue background.
+            6. LIGHTING: Ensure even studio-quality lighting on the face.
             
-            The goal is a formal, beautiful student portrait for an official certificate. Output ONLY the final processed image.`
+            Output ONLY the modified image. No text response needed.`
           }
         ]
       },
+      config: {
+        imageConfig: {
+          aspectRatio: "3:4"
+        }
+      }
     });
     
+    // Kiểm tra và trích xuất phần dữ liệu ảnh từ response
     const candidate = response.candidates?.[0];
-    const parts = candidate?.content?.parts;
-    
-    if (parts && parts.length > 0) {
-      for (const part of parts) {
-        if (part.inlineData) {
+    if (candidate && candidate.content && candidate.content.parts) {
+      for (const part of candidate.content.parts) {
+        if (part.inlineData && part.inlineData.data) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }
       }
     }
-    return base64Image;
-  } catch (error) {
+    
+    throw new Error("No image data found in AI response");
+  } catch (error: any) {
     console.error("Beautify Error:", error);
+    
+    // Nếu lỗi "Requested entity was not found" hoặc lỗi model Pro, thử lại với model Flash
+    if (error.message?.includes("not found") || error.message?.includes("model")) {
+      try {
+        const aiFlash = new GoogleGenAI({ apiKey });
+        const retryResponse = await aiFlash.models.generateContent({
+          model: 'gemini-2.5-flash-image',
+          contents: {
+            parts: [
+              { inlineData: { data: cleanBase64, mimeType: 'image/jpeg' } },
+              { text: "Make this a formal student ID photo with white shirt, red scarf, and blue background. Keep original face." }
+            ]
+          }
+        });
+        
+        const part = retryResponse.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+        if (part?.inlineData?.data) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
+      } catch (retryError) {
+        console.error("Retry Error:", retryError);
+      }
+    }
+    
     return base64Image;
   }
 };
