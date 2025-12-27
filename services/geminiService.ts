@@ -28,18 +28,16 @@ export const beautifyPortrait = async (base64Image: string) => {
         parts: [
           { inlineData: { data: base64Image.split(',')[1], mimeType: 'image/jpeg' } },
           { 
-            text: `TRANSFORM this image into a strictly professional Vietnamese student ID photo.
+            text: `TRANSFORM this image into a professional Vietnamese student ID photo for a secondary school student (Grade 6).
             
             STRICT RULES:
-            1. FACE & IDENTITY: Keep the original face 100% recognizable. Do not change facial structure, eyes, nose, or mouth. Ensure the head is straight and looking directly at the camera.
-            2. BEAUTIFICATION: Apply subtle, professional skin smoothing and brightening. Remove temporary blemishes (acne, dark circles) but keep natural features. Expression should be natural and polite.
-            3. ATTIRE: Replace the current outfit with a crisp, formal, ironed WHITE Vietnamese student button-up shirt with a neat collar (áo sơ mi trắng có cổ).
-            4. COMPOSITION: Standard ID photo layout (head and shoulders/chest up). Centered head position.
-            5. BACKGROUND: Use a solid, standard light blue background (or clean white as per ID photo standards).
-            6. LIGHTING: Even, professional studio lighting with no harsh shadows.
+            1. FACE & IDENTITY: The original face must remain 100% recognizable. Do not change facial structure or features. The person must be facing forward, head straight, looking directly at the camera.
+            2. BEAUTIFICATION: Apply subtle professional skin smoothing and natural brightening. Remove temporary blemishes like acne or dark circles. Ensure a natural, clean, and polite appearance.
+            3. ATTIRE: Replace current clothing with a crisp WHITE button-up student shirt (áo sơ mi trắng có cổ) AND a traditional Vietnamese RED SCARF (khăn quàng đỏ) tied neatly around the neck. This is mandatory.
+            4. COMPOSITION: Standard ID photo layout (chest up). Centered. Studio lighting style with no harsh shadows.
+            5. BACKGROUND: Solid light blue background (standard for VN ID cards).
             
-            The final result must look like a formal school registration photo used for official certificates. Do not add accessories or other people.
-            Output ONLY the final processed image data.`
+            The goal is a formal, beautiful student portrait for an official certificate. Output ONLY the final processed image.`
           }
         ]
       },

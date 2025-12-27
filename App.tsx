@@ -43,7 +43,7 @@ const App: React.FC = () => {
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState<'NONE' | 'CORRECT' | 'WRONG'>('NONE');
   const [feedbackMsg, setFeedbackMsg] = useState('');
-  const [timeLeft, setTimeLeft] = useState(1200); // 20 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(1200);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,9 +83,11 @@ const App: React.FC = () => {
 
   const startQuiz = () => {
     if (!processedPhoto) return; 
-    const q13 = SHUFFLE(POOL_U1_3, 4);
-    const q46 = SHUFFLE(POOL_U4_6, 16);
+    // Ensure 80% change by picking fresh sets from the pool of 60
+    const q13 = SHUFFLE(POOL_U1_3, 8); 
+    const q46 = SHUFFLE(POOL_U4_6, 12); 
     const combined = [...q13, ...q46].sort(() => Math.random() - 0.5);
+    
     setQuestions(combined);
     setTimeLeft(1200);
     setPhase('QUIZ');
@@ -196,7 +198,8 @@ const App: React.FC = () => {
       ctx.fillText('Đã chinh phục thành công 20 thử thách tiếng Anh 6', 550, 430);
       ctx.font = 'bold 45px "Quicksand"';
       ctx.fillStyle = '#1a237e';
-      ctx.fillText(`SCORE: ${score}/${questions.length} (${Math.round(score/2)} điểm)`, 550, 500);
+      const finalScore = Math.round((score/questions.length)*10);
+      ctx.fillText(`SCORE: ${score}/${questions.length} (${finalScore} điểm)`, 550, 500);
 
       ctx.textAlign = 'right';
       ctx.fillStyle = '#333';
@@ -254,7 +257,7 @@ const App: React.FC = () => {
 
       {phase === 'PHOTO' && (
         <div className="w-full max-w-sm bg-white p-6 rounded-[3rem] shadow-2xl mt-4 text-center animate-in zoom-in duration-300">
-          <h2 className="text-2xl font-black text-slate-800 mb-6 uppercase tracking-tight">Ảnh Thẻ Học Sinh 🏷️</h2>
+          <h2 className="text-2xl font-black text-slate-800 mb-6 uppercase tracking-tight">Ảnh chân dung HS 🏷️</h2>
           
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
 
@@ -265,9 +268,11 @@ const App: React.FC = () => {
                 className="w-full py-16 bg-sky-50 text-sky-600 rounded-3xl border-4 border-dashed border-sky-200 flex flex-col items-center gap-4 active:scale-95 transition-all"
               >
                 <span className="text-6xl">📸</span>
-                <span className="font-black text-sm uppercase">Tải ảnh hoặc Chụp ảnh</span>
+                <span className="font-black text-sm uppercase">Tải ảnh chân dung</span>
               </button>
-              <p className="text-slate-400 text-[11px] font-bold">Lưu ý: Hãy chọn ảnh rõ mặt để AI xử lý đẹp nhất</p>
+              <p className="text-slate-400 text-[11px] font-bold px-4 leading-relaxed">
+                Thầy lưu ý: Chọn ảnh mặt nhìn thẳng, đầu ngay ngắn để AI thay sơ mi trắng, khăn quàng đỏ chuyên nghiệp.
+              </p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -277,14 +282,14 @@ const App: React.FC = () => {
                   <div className="absolute inset-0 bg-sky-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white p-6">
                     <div className="w-12 h-12 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <span className="font-black text-[13px] tracking-widest uppercase text-center leading-relaxed">
-                      AI đang xử lý chuyên nghiệp...<br/>
-                      <span className="text-sky-300 text-[10px]">Làm đẹp da & Thay sơ mi học sinh</span>
+                      AI ĐANG TẠO ẢNH THẺ...<br/>
+                      <span className="text-sky-300 text-[10px]">Làm mịn da & Thay sơ mi, khăn quàng đỏ</span>
                     </span>
                   </div>
                 )}
                 {processedPhoto && !isProcessing && (
                   <div className="absolute top-4 right-4 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-black shadow-lg animate-bounce">
-                    ĐÃ SẴN SÀNG ✨
+                    CHUẨN QUY ĐỊNH ✨
                   </div>
                 )}
               </div>
@@ -457,16 +462,21 @@ const App: React.FC = () => {
                 <button onClick={downloadCert} className="w-full bg-emerald-600 text-white py-5 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
                     LƯU BẢN ĐẸP 💾
                 </button>
-                <div className="grid grid-cols-2 gap-3">
-                    <button onClick={startQuiz} className="bg-sky-600 text-white py-4 rounded-2xl font-black text-sm shadow-md active:scale-95 transition-all">
-                        LUYỆN LẠI ⚔️
+                <div className="flex flex-col gap-3">
+                    <button 
+                      onClick={startQuiz} 
+                      className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-md shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 border-b-4 border-sky-800"
+                    >
+                      LUYỆN LẠI LẦN 2 (ĐỂ ĐIỂM CAO HƠN) ⚔️
                     </button>
-                    <button onClick={() => window.location.reload()} className="bg-white border-2 border-slate-200 text-slate-400 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all">
+                    <button onClick={() => window.location.reload()} className="w-full bg-white border-2 border-slate-200 text-slate-400 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all">
                         THOÁT 🔄
                     </button>
                 </div>
            </div>
-           <p className="mt-8 text-[9px] text-slate-400 font-black uppercase tracking-widest text-center">Học sinh chụp ảnh màn hình hoặc tải bản đẹp để gửi Thầy nhé!</p>
+           <p className="mt-8 text-[9px] text-slate-400 font-black uppercase tracking-widest text-center px-6 leading-relaxed">
+             Tuyệt vời! Em có thể nhấn "LUYỆN LẠI LẦN 2" để chinh phục 20 câu hỏi mới và đạt điểm 10 tuyệt đối nhé!
+           </p>
         </div>
       )}
     </div>
