@@ -3,8 +3,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English 6 Semester 1 Quiz - Teacher Đinh Văn Thành</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>English 6 Global Success - Teacher Đinh Văn Thành</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,23 +14,35 @@
         body {
             font-family: 'Quicksand', sans-serif;
             background-color: #f0f9ff;
+            overflow-x: hidden;
+            touch-action: manipulation;
         }
         .cert-font { font-family: 'Playfair Display', serif; }
         .sig-font { font-family: 'Dancing Script', cursive; }
         
-        @keyframes correct-pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        @keyframes float-up {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            10% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(-200px) scale(1.2); opacity: 0; }
         }
-        .animate-correct { animation: correct-pop 0.5s ease-out; }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+        /* Tốc độ bay chậm: 5 giây */
+        .animate-float-up-slow {
+            animation: float-up 5s ease-out forwards;
         }
-        .animate-wrong { animation: shake 0.3s ease-in-out infinite; }
+
+        .answer-btn {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        /* Ẩn thanh cuộn */
+        ::-webkit-scrollbar { display: none; }
+
+        /* Tối ưu kích thước chữ trên mobile */
+        @media (max-width: 640px) {
+            h1 { font-size: 1.75rem !important; }
+            h3 { font-size: 1.25rem !important; }
+        }
     </style>
 <script type="importmap">
 {

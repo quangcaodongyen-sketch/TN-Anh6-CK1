@@ -1,8 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Question } from './types';
-import { POOL_U1_3, POOL_U4_6 } from './constants';
-import { beautifyPortrait } from './services/geminiService';
+import { Question, Difficulty } from './types';
+import { QUESTIONS } from './constants';
 
 const SHUFFLE = <T,>(arr: T[], count: number): T[] => {
   return [...arr].sort(() => Math.random() - 0.5).slice(0, count);
@@ -14,37 +13,40 @@ const SOUNDS = {
   final: "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"
 };
 
-const PRAISE_MESSAGES = [
-  "Tuyệt vời ông mặt trời! 🏆",
-  "Tư duy quá đỉnh, thầy rất hãnh diện về em! 😎",
-  "IQ vô cực là đây chứ đâu! 🧠✨",
-  "Bậc thầy tiếng Anh tương lai đây rồi! 🎓",
-  "Đúng là 'chiến thần' lớp mình! 🌟",
-  "Thầy Thành xin bái phục sự thông minh này! 🙏"
-];
+const LEVEL_INFO = {
+  BASIC: { label: "CƠ BẢN", rank: "Đồng", color: "#cd7f32", bg: "bg-orange-50", text: "text-orange-700" },
+  INTERMEDIATE: { label: "KHÁ", rank: "Bạc", color: "#9ca3af", bg: "bg-slate-100", text: "text-slate-700" },
+  ADVANCED: { label: "GIỎI", rank: "Vàng", color: "#fbbf24", bg: "bg-amber-50", text: "text-amber-700" }
+};
 
-const ENCOURAGE_MESSAGES = [
-  "Suýt soát luôn, cố gắng câu sau nhé! 😂",
-  "Sai một ly đi một dặm, nhưng không sao, làm lại nào! 🏃‍♂️",
-  "Kiến thức đang nạp vào, câu sau sẽ 'nổ' đáp án đúng! 🕊️",
-  "Đừng nản lòng, quan trọng là em đã biết mình sai ở đâu! 💡"
-];
+const PRAISE_MESSAGES = ["Tuyệt vời! 🏆", "Đỉnh cao! 😎", "Quá giỏi! 🧠", "Xuất sắc! 🌟"];
+const ENCOURAGE_MESSAGES = ["Cố lên nào! 💪", "Gần đúng rồi! 🏃", "Làm lại nhé! ✨"];
+
+const FloatingPoint: React.FC<{ x: number, y: number }> = ({ x, y }) => (
+  <div 
+    className="fixed pointer-events-none text-emerald-600 font-black text-4xl animate-float-up-slow z-[100] drop-shadow-xl"
+    style={{ left: x - 40, top: y - 20 }}
+  >
+    +10 XP ✨
+  </div>
+);
 
 const App: React.FC = () => {
   const [phase, setPhase] = useState<'REG' | 'PHOTO' | 'QUIZ' | 'CERT'>('REG');
   const [userName, setUserName] = useState('');
   const [userClass, setUserClass] = useState('');
+  const [difficulty, setDifficulty] = useState<Difficulty>('BASIC');
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
-  const [processedPhoto, setProcessedPhoto] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [lastQuestionIds, setLastQuestionIds] = useState<number[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
   const [feedback, setFeedback] = useState<'NONE' | 'CORRECT' | 'WRONG'>('NONE');
   const [feedbackMsg, setFeedbackMsg] = useState('');
   const [timeLeft, setTimeLeft] = useState(1200);
+  const [floats, setFloats] = useState<{ id: number, x: number, y: number }[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,19 +65,9 @@ const App: React.FC = () => {
           return prev - 1;
         });
       }, 1000);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [phase]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [phase, timeLeft]);
 
   const playSound = (type: keyof typeof SOUNDS) => {
     if (audioRef.current) audioRef.current.src = SOUNDS[type];
@@ -83,27 +75,45 @@ const App: React.FC = () => {
   };
 
   const startQuiz = () => {
-    if (!processedPhoto) return; 
-    const q13 = SHUFFLE(POOL_U1_3, 8); 
-    const q46 = SHUFFLE(POOL_U4_6, 12); 
-    const combined = [...q13, ...q46].sort(() => Math.random() - 0.5);
+    const pool = QUESTIONS.filter(q => q.difficulty === difficulty);
+    const vocabPool = pool.filter(q => q.unit === 'Vocabulary');
+    const normalPool = pool.filter(q => q.unit !== 'Vocabulary');
+
+    let selected: Question[] = [];
+    const pickedVocab = SHUFFLE(vocabPool, 2);
+
+    if (lastQuestionIds.length === 0) {
+      const pickedNormal = SHUFFLE(normalPool, 18);
+      selected = SHUFFLE([...pickedVocab, ...pickedNormal], 20);
+    } else {
+      const oldNormalIds = lastQuestionIds.filter(id => normalPool.some(q => q.id === id));
+      const oldNormal = normalPool.filter(q => oldNormalIds.includes(q.id));
+      const newNormal = normalPool.filter(q => !oldNormalIds.includes(q.id));
+      // Thay mới 10 câu normal
+      selected = SHUFFLE([...pickedVocab, ...SHUFFLE(oldNormal, 8), ...SHUFFLE(newNormal, 10)], 20);
+    }
     
-    setQuestions(combined);
-    setTimeLeft(1200);
+    setQuestions(selected);
+    setLastQuestionIds(selected.map(q => q.id));
     setPhase('QUIZ');
     setCurrentIdx(0);
     setScore(0);
+    setTotalPoints(0);
     setFeedback('NONE');
   };
 
-  const handleAnswer = (idx: number) => {
+  const handleAnswer = (idx: number, e: React.MouseEvent) => {
     if (feedback !== 'NONE') return;
     const isCorrect = idx === questions[currentIdx].correctAnswer;
     if (isCorrect) {
       setScore(s => s + 1);
+      setTotalPoints(p => p + 10);
       setFeedback('CORRECT');
       setFeedbackMsg(PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)]);
       playSound('correct');
+      const newFloat = { id: Date.now(), x: e.clientX, y: e.clientY };
+      setFloats(prev => [...prev, newFloat]);
+      setTimeout(() => setFloats(prev => prev.filter(f => f.id !== newFloat.id)), 5000);
       // @ts-ignore
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     } else {
@@ -122,376 +132,179 @@ const App: React.FC = () => {
     }, 2500); 
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setErrorMsg(null);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const data = event.target?.result as string;
-        setUserPhoto(data);
-        setProcessedPhoto(null);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleBeautify = async () => {
-    if (!userPhoto) return;
-    setIsProcessing(true);
-    setErrorMsg(null);
-    try {
-      const result = await beautifyPortrait(userPhoto);
-      if (result === userPhoto) {
-        setErrorMsg("AI đang bận hoặc không thể xử lý ảnh này. Em hãy thử lại hoặc dùng ảnh gốc nhé!");
-      }
-      setProcessedPhoto(result);
-    } catch (err) {
-      setErrorMsg("Đã xảy ra lỗi khi tạo ảnh thẻ AI. Em hãy kiểm tra kết nối mạng nhé!");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const downloadCert = () => {
     const canvas = document.createElement('canvas');
-    canvas.width = 1200;
-    canvas.height = 800;
+    canvas.width = 1200; canvas.height = 800;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    ctx.fillStyle = '#fffdf0';
-    ctx.fillRect(0, 0, 1200, 800);
-    ctx.strokeStyle = '#c5a059';
-    ctx.lineWidth = 25;
-    ctx.strokeRect(30, 30, 1140, 740);
-
-    const finalPhoto = processedPhoto || userPhoto;
-    if (finalPhoto) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
+    const info = LEVEL_INFO[difficulty];
+    ctx.fillStyle = '#fffdf0'; ctx.fillRect(0, 0, 1200, 800);
+    ctx.strokeStyle = info.color; ctx.lineWidth = 20; ctx.strokeRect(40, 40, 1120, 720);
+    if (userPhoto) {
+      const img = new Image(); img.crossOrigin = "anonymous";
       img.onload = () => {
-        ctx.save();
-        ctx.fillStyle = 'white';
-        ctx.fillRect(920, 60, 220, 280);
-        ctx.strokeStyle = '#c5a059';
-        ctx.lineWidth = 6;
-        ctx.strokeRect(920, 60, 220, 280);
-        ctx.drawImage(img, 930, 70, 200, 260);
-        ctx.restore();
+        ctx.save(); ctx.fillStyle = 'white'; ctx.fillRect(920, 80, 200, 260);
+        ctx.strokeStyle = info.color; ctx.lineWidth = 4; ctx.strokeRect(920, 80, 200, 260);
+        ctx.drawImage(img, 930, 90, 180, 240); ctx.restore();
         continueDrawing();
       };
-      img.src = finalPhoto;
-    } else {
-      continueDrawing();
-    }
+      img.src = userPhoto;
+    } else continueDrawing();
 
     function continueDrawing() {
-      if (!ctx) return;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#8b4513';
-      ctx.font = 'bold 70px "Playfair Display"';
-      ctx.fillText('GIẤY CHỨNG NHẬN', 550, 160);
-
-      ctx.font = 'italic 25px "Quicksand"';
-      ctx.fillText('Khen ngợi nỗ lực học tập xuất sắc - HK1', 550, 210);
-
-      ctx.fillStyle = '#d32f2f';
-      ctx.font = 'bold 60px "Quicksand"';
-      ctx.fillText(userName.toUpperCase(), 550, 310);
-
-      ctx.fillStyle = '#333';
-      ctx.font = 'bold 35px "Quicksand"';
-      ctx.fillText(`Lớp: ${userClass}`, 550, 370);
-
-      ctx.font = '26px "Quicksand"';
-      ctx.fillText('Đã chinh phục thành công 20 thử thách tiếng Anh 6', 550, 430);
-      ctx.font = 'bold 45px "Quicksand"';
-      ctx.fillStyle = '#1a237e';
-      const finalScore = Math.round((score/(questions.length || 20))*10);
-      ctx.fillText(`SCORE: ${score}/${questions.length || 20} (${finalScore} điểm)`, 550, 500);
-
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#333';
-      ctx.font = 'bold 20px "Quicksand"';
-      ctx.fillText('GIÁO VIÊN BỘ MÔN', 1100, 620);
-      ctx.font = '45px "Dancing Script"';
-      ctx.fillStyle = '#1a237e';
-      ctx.fillText('Đinh Văn Thành', 1100, 680);
-
-      const link = document.createElement('a');
-      link.download = `ChungNhan_${userName}_Anh6.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      if (!ctx) return; ctx.textAlign = 'center'; ctx.fillStyle = '#8b4513';
+      ctx.font = 'bold 70px "Playfair Display"'; ctx.fillText('GIẤY CHỨNG NHẬN', 600, 180);
+      ctx.font = 'italic 30px "Quicksand"'; ctx.fillText(`Hoàn thành cấp độ: ${info.label}`, 600, 240);
+      ctx.fillStyle = '#d32f2f'; ctx.font = 'bold 65px "Quicksand"'; ctx.fillText(userName.toUpperCase(), 600, 360);
+      ctx.fillStyle = '#333'; ctx.font = 'bold 35px "Quicksand"'; ctx.fillText(`Lớp: ${userClass} | Hạng: ${info.rank}`, 600, 430);
+      ctx.font = '30px "Quicksand"'; ctx.fillText('Đã chinh phục ôn tập Anh 6 Global Success HK1', 600, 520);
+      ctx.font = 'bold 50px "Quicksand"'; ctx.fillStyle = info.color;
+      ctx.fillText(`THÀNH TÍCH: ${score}/20 (${totalPoints} XP)`, 600, 620);
+      ctx.textAlign = 'right'; ctx.font = '45px "Dancing Script"'; ctx.fillStyle = '#1a237e'; ctx.fillText('Thầy Đinh Văn Thành', 1100, 720);
+      const link = document.createElement('a'); link.download = `Cert_${userName}.png`;
+      link.href = canvas.toDataURL('image/png'); link.click();
     }
   };
 
   return (
-    <div className="min-h-screen bg-sky-50 flex flex-col items-center justify-start p-4 md:p-10 font-sans selection:bg-sky-200">
+    <div className="min-h-screen bg-sky-50 flex flex-col items-center p-4 md:p-8 font-sans overflow-x-hidden">
       <audio ref={audioRef} />
+      {floats.map(f => <FloatingPoint key={f.id} x={f.x} y={f.y} />)}
 
       {phase === 'REG' && (
-        <div className="w-full max-w-sm bg-white p-8 rounded-[3rem] shadow-2xl mt-10 border-b-8 border-sky-200 animate-in fade-in slide-in-from-top-4">
-          <div className="text-center mb-10">
-            <h1 className="text-4xl font-black text-sky-600 mb-2 uppercase">Tiếng Anh 6 📝</h1>
-            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Global Success • Kiểm tra HK1</p>
+        <div className="w-full max-w-lg mt-2 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="text-center">
+            <h1 className="text-3xl font-black text-sky-600 mb-1 uppercase tracking-tight">Anh 6 Global Success 📝</h1>
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Teacher Đinh Văn Thành</p>
           </div>
-          <div className="space-y-6">
-            <div className="group">
-                <label className="block text-xs font-black text-slate-400 mb-2 ml-4 uppercase">Họ và tên</label>
-                <input 
-                type="text" placeholder="Ví dụ: Đinh Quang Việt" 
-                className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-sky-500 transition-all outline-none"
-                value={userName} onChange={e => setUserName(e.target.value)}
-                />
+          <div className="bg-white p-6 rounded-[2rem] shadow-xl border-b-[8px] border-sky-100 space-y-6">
+            <div className="space-y-4">
+              <input type="text" placeholder="Họ tên học sinh" className="w-full px-5 py-4 bg-slate-50 rounded-xl font-bold border-2 border-transparent focus:border-sky-400 outline-none shadow-inner" value={userName} onChange={e => setUserName(e.target.value)} />
+              <input type="text" placeholder="Lớp (Ví dụ: 6A1)" className="w-full px-5 py-4 bg-slate-50 rounded-xl font-bold border-2 border-transparent focus:border-sky-400 outline-none shadow-inner" value={userClass} onChange={e => setUserClass(e.target.value)} />
             </div>
-            <div className="group">
-                <label className="block text-xs font-black text-slate-400 mb-2 ml-4 uppercase">Lớp của em</label>
-                <input 
-                type="text" placeholder="Ví dụ: 6A1" 
-                className="w-full px-6 py-4 bg-slate-50 rounded-2xl font-bold border-2 border-transparent focus:border-sky-500 transition-all outline-none"
-                value={userClass} onChange={e => setUserClass(e.target.value)}
-                />
+            <div className="space-y-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Chọn mức độ</p>
+              <div className="grid grid-cols-1 gap-2">
+                {(Object.keys(LEVEL_INFO) as Difficulty[]).map(lvl => (
+                  <button key={lvl} onClick={() => setDifficulty(lvl)} className={`p-4 rounded-xl border-2 flex items-center justify-between transition-all ${difficulty === lvl ? 'bg-sky-600 border-sky-700 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-500 hover:border-sky-200'}`}>
+                    <span className="font-black text-sm">{LEVEL_INFO[lvl].label}</span>
+                    <span className="text-xl">{lvl === 'BASIC' ? '🥉' : lvl === 'INTERMEDIATE' ? '🥈' : '🥇'}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <button 
-              disabled={!userName || !userClass}
-              onClick={() => setPhase('PHOTO')}
-              className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black shadow-lg hover:shadow-sky-200 disabled:opacity-30 transition-all active:scale-95 uppercase tracking-widest"
-            >
-              Tiếp theo ➡️
-            </button>
+            <button disabled={!userName || !userClass} onClick={() => setPhase('PHOTO')} className="w-full bg-sky-600 text-white py-5 rounded-xl font-black text-lg shadow-[0_6px_0_rgb(2,132,199)] active:translate-y-1 active:shadow-none transition-all uppercase disabled:opacity-30">TIẾP TỤC 🚀</button>
           </div>
-          <p className="mt-8 text-center text-slate-400 text-[10px] font-black italic">Hệ thống ôn luyện của Thầy Đinh Văn Thành</p>
         </div>
       )}
 
       {phase === 'PHOTO' && (
-        <div className="w-full max-w-sm bg-white p-6 rounded-[3rem] shadow-2xl mt-4 text-center animate-in zoom-in duration-300">
-          <h2 className="text-2xl font-black text-slate-800 mb-6 uppercase tracking-tight">Ảnh chân dung HS 🏷️</h2>
-          
-          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-
-          {!userPhoto ? (
-            <div className="grid grid-cols-1 gap-4">
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full py-16 bg-sky-50 text-sky-600 rounded-3xl border-4 border-dashed border-sky-200 flex flex-col items-center gap-4 active:scale-95 transition-all"
-              >
+        <div className="w-full max-w-md bg-white p-6 rounded-[2rem] shadow-xl mt-4 text-center animate-in zoom-in-95 duration-500">
+          <h2 className="text-2xl font-black text-slate-800 mb-6 uppercase">Ảnh của em 🤳</h2>
+          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = (ev) => setUserPhoto(ev.target?.result as string);
+              reader.readAsDataURL(file);
+            }
+          }} />
+          <div className="space-y-6">
+            {!userPhoto ? (
+              <button onClick={() => fileInputRef.current?.click()} className="w-full py-16 bg-sky-50 text-sky-600 rounded-[1.5rem] border-4 border-dashed border-sky-200 flex flex-col items-center gap-3">
                 <span className="text-6xl">📸</span>
-                <span className="font-black text-sm uppercase">Tải ảnh chân dung</span>
+                <span className="font-black text-xs uppercase tracking-widest">Tải ảnh chân dung</span>
               </button>
-              <p className="text-slate-400 text-[11px] font-bold px-4 leading-relaxed">
-                Thầy lưu ý: Chọn ảnh mặt nhìn thẳng, đầu ngay ngắn để AI thay sơ mi trắng, khăn quàng đỏ chuyên nghiệp.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="relative inline-block rounded-[2rem] overflow-hidden shadow-2xl border-4 border-white aspect-[3/4] w-full bg-slate-100">
-                <img src={processedPhoto || userPhoto} alt="User" className="w-full h-full object-cover" />
-                {isProcessing && (
-                  <div className="absolute inset-0 bg-sky-950/80 backdrop-blur-md flex flex-col items-center justify-center text-white p-6">
-                    <div className="w-12 h-12 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <span className="font-black text-[13px] tracking-widest uppercase text-center leading-relaxed">
-                      AI ĐANG TẠO ẢNH THẺ...<br/>
-                      <span className="text-sky-300 text-[10px]">Làm mịn da & Thay sơ mi, khăn quàng đỏ</span>
-                    </span>
-                  </div>
-                )}
-                {processedPhoto && !isProcessing && (
-                  <div className="absolute top-4 right-4 bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-black shadow-lg animate-bounce">
-                    XỬ LÝ XONG ✨
-                  </div>
-                )}
+            ) : (
+              <div className="relative rounded-[2rem] overflow-hidden shadow-xl border-4 border-white aspect-[3/4] w-48 mx-auto">
+                <img src={userPhoto} className="w-full h-full object-cover" alt="User" />
+                <button onClick={() => setUserPhoto(null)} className="absolute top-2 right-2 bg-rose-500 text-white p-2 rounded-full text-xs font-bold shadow-lg">X</button>
               </div>
-              
-              {errorMsg && (
-                <div className="bg-rose-50 border-2 border-rose-100 p-4 rounded-2xl text-rose-600 text-xs font-bold leading-relaxed">
-                  {errorMsg}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <button 
-                  onClick={() => fileInputRef.current?.click()} 
-                  className="p-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase active:scale-95 transition-all"
-                >
-                  Chọn lại
-                </button>
-                <button 
-                  onClick={handleBeautify} 
-                  disabled={isProcessing} 
-                  className="p-4 bg-sky-600 text-white rounded-2xl font-black text-xs uppercase shadow-md active:scale-95 transition-all hover:bg-sky-700 disabled:opacity-50"
-                >
-                  Tạo ảnh thẻ AI ✨
-                </button>
-              </div>
-
-              <div className="pt-2">
-                <button 
-                  onClick={startQuiz} 
-                  className={`w-full py-5 rounded-2xl font-black text-lg shadow-lg active:scale-95 uppercase tracking-widest transition-all ${userPhoto ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
-                >
-                  Bắt đầu ôn luyện 🚀
-                </button>
-                {!processedPhoto && !isProcessing && (
-                  <p className="mt-4 text-slate-400 text-[10px] font-bold">
-                    (Em nên nhấn "Tạo ảnh thẻ AI" để giấy chứng nhận đẹp hơn nhé!)
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+            )}
+            <button onClick={startQuiz} className={`w-full py-5 rounded-xl font-black text-lg shadow-xl uppercase transition-all ${userPhoto ? 'bg-sky-600 text-white active:translate-y-1' : 'bg-slate-200 text-slate-400'}`}>BẮT ĐẦU ÔN TẬP 🏃</button>
+          </div>
         </div>
       )}
 
       {phase === 'QUIZ' && (
-        <div className="w-full max-w-sm md:max-w-xl animate-in slide-in-from-bottom-10">
-           <div className="flex justify-between items-center mb-4 px-4 bg-white/60 backdrop-blur-md py-2 rounded-2xl border border-white shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">⏱️</span>
-                  <span className={`font-black text-lg ${timeLeft < 60 ? 'text-rose-600 animate-pulse' : 'text-slate-700'}`}>
-                    {formatTime(timeLeft)}
-                  </span>
-                </div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Thí sinh: {userName}
-                </div>
-           </div>
-           
-           <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border-b-8 border-sky-100">
-                <div className="h-3 bg-slate-100 w-full relative">
-                    <div className="h-full bg-sky-500 transition-all duration-700" style={{width: `${((currentIdx+1)/(questions.length || 20))*100}%`}} />
-                </div>
-                <div className="p-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <span className="px-4 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-black uppercase tracking-widest">{questions[currentIdx]?.unit || "Unit"}</span>
-                        <span className="font-black text-slate-300 text-sm">Câu {currentIdx + 1}/{questions.length}</span>
-                    </div>
-                    <h3 className="text-xl md:text-2xl font-black text-indigo-950 mb-8 leading-tight">
-                        {questions[currentIdx]?.question}
-                    </h3>
-                    <div className="space-y-4">
-                        {questions[currentIdx]?.options.map((opt, i) => {
-                            const isCorrect = i === questions[currentIdx].correctAnswer;
-                            
-                            const bgColors = [
-                              "bg-blue-50 border-blue-200 hover:bg-blue-100",
-                              "bg-amber-50 border-amber-200 hover:bg-amber-100",
-                              "bg-emerald-50 border-emerald-200 hover:bg-emerald-100",
-                              "bg-rose-50 border-rose-200 hover:bg-rose-100"
-                            ];
-                            const letterColors = [
-                              "bg-blue-500 text-white",
-                              "bg-amber-500 text-white",
-                              "bg-emerald-500 text-white",
-                              "bg-rose-500 text-white"
-                            ];
+        <div className="w-full max-w-2xl mt-2 space-y-4">
+          <div className="flex justify-between items-center bg-white/90 p-4 rounded-2xl shadow-sm border border-white mx-2">
+            <span className="font-black text-rose-600 text-lg">⏱️ {Math.floor(timeLeft/60)}:{timeLeft%60<10?'0':''}{timeLeft%60}</span>
+            <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-slate-400 uppercase">{LEVEL_INFO[difficulty].label}</span>
+                <span className="font-black text-emerald-600 text-xl">{totalPoints} XP</span>
+            </div>
+          </div>
+          <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border-b-8 border-sky-100 p-6 md:p-8 mx-2 animate-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center mb-6">
+              <span className="px-4 py-1 bg-sky-50 text-sky-600 rounded-full text-[10px] font-black uppercase tracking-widest">{questions[currentIdx]?.unit}</span>
+              <span className="font-black text-slate-300 text-xs">Câu {currentIdx+1}/20</span>
+            </div>
+            <h3 className="text-xl md:text-2xl font-black text-indigo-950 mb-10 leading-snug">{questions[currentIdx]?.question}</h3>
+            <div className="grid grid-cols-1 gap-5">
+              {questions[currentIdx]?.options.map((opt, i) => {
+                const isCorrect = i === questions[currentIdx].correctAnswer;
+                const config = [
+                  { bg: 'bg-blue-500', shadow: 'shadow-[0_6px_0_rgb(29,78,216)]', active: 'active:shadow-none active:translate-y-1' },
+                  { bg: 'bg-amber-500', shadow: 'shadow-[0_6px_0_rgb(180,83,9)]', active: 'active:shadow-none active:translate-y-1' },
+                  { bg: 'bg-emerald-500', shadow: 'shadow-[0_6px_0_rgb(5,150,105)]', active: 'active:shadow-none active:translate-y-1' },
+                  { bg: 'bg-rose-500', shadow: 'shadow-[0_6px_0_rgb(190,18,60)]', active: 'active:shadow-none active:translate-y-1' }
+                ][i % 4];
 
-                            let btnStyle = `w-full p-5 text-left rounded-2xl border-2 font-bold transition-all flex items-center gap-4 shadow-sm `;
-                            if (feedback === 'NONE') {
-                              btnStyle += `${bgColors[i % bgColors.length]} active:scale-98`;
-                            } else if (isCorrect) {
-                              btnStyle += "border-emerald-500 bg-emerald-100 text-emerald-900 animate-correct shadow-inner";
-                            } else {
-                              btnStyle += "border-slate-100 bg-white opacity-40";
-                            }
+                let btnClass = `w-full p-5 text-left rounded-2xl font-black text-white transition-all flex items-center gap-4 relative ${config.bg} ${config.shadow} ${config.active} `;
+                if (feedback !== 'NONE') {
+                  if (isCorrect) btnClass = `w-full p-5 text-left rounded-2xl font-black text-white bg-emerald-600 shadow-[0_4px_0_rgb(5,150,105)] translate-y-1 `;
+                  else btnClass = `w-full p-5 text-left rounded-2xl font-black text-white bg-slate-400 opacity-50 `;
+                }
 
-                            return (
-                                <button key={i} onClick={() => handleAnswer(i)} disabled={feedback !== 'NONE'} className={btnStyle}>
-                                    <span className={`w-10 h-10 min-w-[2.5rem] rounded-xl flex items-center justify-center text-sm font-black shadow-md ${feedback === 'NONE' ? letterColors[i % letterColors.length] : isCorrect ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                                        {String.fromCharCode(65+i)}
-                                    </span>
-                                    <span className="text-slate-800">{opt}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                    {feedback !== 'NONE' && (
-                        <div className={`mt-6 p-5 rounded-2xl animate-in zoom-in-50 border-2 ${feedback === 'CORRECT' ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-                            <p className="font-black text-sm mb-2">{feedbackMsg}</p>
-                            <p className="text-xs font-medium text-slate-600 italic leading-relaxed">{questions[currentIdx]?.explanation}</p>
-                        </div>
-                    )}
+                return (
+                  <button key={i} onClick={(e) => handleAnswer(i, e)} disabled={feedback !== 'NONE'} className={btnClass}>
+                    <span className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-lg">{String.fromCharCode(65+i)}</span>
+                    <span className="text-sm md:text-lg break-words flex-1 leading-tight">{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {feedback !== 'NONE' && (
+              <div className={`mt-8 p-5 rounded-2xl animate-in zoom-in-95 border-2 ${feedback === 'CORRECT' ? 'bg-emerald-50 border-emerald-200 shadow-emerald-50' : 'bg-rose-50 border-rose-200 shadow-rose-50'} shadow-lg`}>
+                <p className="font-black text-slate-800 text-lg mb-2">{feedbackMsg}</p>
+                <div className="flex gap-3 items-start">
+                    <span className="text-xl">💡</span>
+                    <p className="text-xs font-medium text-slate-600 leading-relaxed italic">{questions[currentIdx]?.explanation}</p>
                 </div>
-           </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {phase === 'CERT' && (
-        <div className="w-full flex flex-col items-center justify-center animate-in fade-in duration-1000 mb-20 px-4">
-           <div className="w-full max-w-sm mb-4 text-center">
-                <div className="inline-block px-8 py-3 bg-amber-400 text-white rounded-full font-black text-sm shadow-xl animate-bounce">
-                    XUẤT SẮC HOÀN THÀNH! 🏆
+        <div className="w-full max-w-md flex flex-col items-center animate-in fade-in duration-700 px-4 mt-2">
+          <div className="bg-[#fffdf0] rounded-3xl border-[16px] p-8 shadow-2xl relative overflow-hidden" style={{borderColor: LEVEL_INFO[difficulty].color}}>
+            <h1 className="text-center text-2xl font-bold text-[#8b4513] cert-font uppercase mb-6 tracking-widest">Giấy Chứng Nhận</h1>
+            <div className="flex flex-col gap-6 items-center mb-8">
+              <div className="text-center">
+                <h2 className="text-3xl font-black text-rose-700 mb-2 uppercase tracking-tight">{userName}</h2>
+                <p className="text-sm font-bold text-slate-700">Lớp: {userClass}</p>
+                <div className="mt-6 bg-white/80 px-8 py-4 rounded-3xl border-2 border-slate-100 shadow-xl inline-block">
+                  <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Thành tích</p>
+                  <p className="text-4xl font-black text-emerald-600">{totalPoints} XP</p>
                 </div>
-           </div>
-           
-           <div className="w-full max-w-md bg-[#fffdf0] rounded-xl border-[12px] border-[#c5a059] p-4 shadow-2xl relative overflow-hidden">
-                <div className="absolute -top-4 -left-4 w-12 h-12 border-4 border-rose-500/20 rounded-full opacity-30"></div>
-                
-                <div className="text-center mb-6 pr-4">
-                    <h1 className="text-2xl font-bold text-[#8b4513] cert-font leading-tight uppercase">Giấy Chứng Nhận</h1>
-                    <p className="text-[10px] italic text-slate-400 font-serif">Khen ngợi nỗ lực học tập xuất sắc - HK1</p>
-                </div>
-                
-                <div className="flex gap-4 items-start mb-6">
-                    <div className="flex-1 text-center pl-2">
-                        <h2 className="text-2xl font-black text-rose-700 mb-2 underline decoration-[#c5a059]/30 underline-offset-8">
-                            {userName.toUpperCase()}
-                        </h2>
-                        <p className="text-sm font-bold text-slate-700 mb-4">Lớp: {userClass}</p>
-                        
-                        <div className="bg-white/70 p-4 rounded-3xl border-2 border-[#c5a059]/20 shadow-sm inline-block">
-                            <p className="text-[10px] font-bold text-slate-500 mb-1">Điểm số đạt được:</p>
-                            <p className="text-3xl font-black text-emerald-600 leading-none">{score}/{questions.length || 20}</p>
-                        </div>
-                    </div>
-
-                    <div className="shrink-0">
-                        <div className="bg-white p-1 shadow-md border-2 border-[#c5a059]/20 rotate-1">
-                            {processedPhoto ? (
-                                <img src={processedPhoto} className="w-20 aspect-[3/4] object-cover" />
-                            ) : (
-                                <div className="w-20 aspect-[3/4] bg-slate-100 flex items-center justify-center text-[8px] text-slate-300 font-bold uppercase">No Photo</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex justify-between items-end mt-4">
-                    <div className="opacity-40">
-                         <div className="w-16 h-16 border-4 border-rose-500 rounded-full flex items-center justify-center text-[6px] font-black text-rose-500 -rotate-12 border-dashed">
-                            <span className="text-center font-bold">ENGLISH<br/>APPROVED</span>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-4">GIÁO VIÊN BỘ MÔN</p>
-                        <div className="relative">
-                            <p className="sig-font text-3xl text-indigo-900 absolute -top-8 right-0 w-full opacity-70 -rotate-3">Đinh Văn Thành</p>
-                            <p className="font-black text-slate-800 border-t-2 border-slate-200 pt-1 text-xs uppercase tracking-tighter">Đinh Văn Thành</p>
-                        </div>
-                    </div>
-                </div>
-           </div>
-
-           <div className="w-full max-w-sm mt-8 space-y-4">
-                <button onClick={downloadCert} className="w-full bg-emerald-600 text-white py-5 rounded-3xl font-black text-lg shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
-                    LƯU BẢN ĐẸP 💾
-                </button>
-                <div className="flex flex-col gap-3">
-                    <button 
-                      onClick={startQuiz} 
-                      className="w-full bg-sky-600 text-white py-5 rounded-2xl font-black text-md shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 border-b-4 border-sky-800"
-                    >
-                      LUYỆN LẠI LẦN 2 (ĐỂ ĐIỂM CAO HƠN) ⚔️
-                    </button>
-                    <button onClick={() => window.location.reload()} className="w-full bg-white border-2 border-slate-200 text-slate-400 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all">
-                        THOÁT 🔄
-                    </button>
-                </div>
-           </div>
-           <p className="mt-8 text-[9px] text-slate-400 font-black uppercase tracking-widest text-center px-6 leading-relaxed">
-             Tuyệt vời! Em có thể nhấn "LUYỆN LẠI LẦN 2" để chinh phục 20 câu hỏi mới và đạt điểm 10 tuyệt đối nhé!
-           </p>
+              </div>
+              {userPhoto && <img src={userPhoto} className="w-24 aspect-[3/4] object-cover rounded-xl shadow-2xl border-4 border-white transform rotate-2" alt="Cert" />}
+            </div>
+            <div className="text-right mt-4 border-t-2 border-slate-100 pt-4">
+              <p className="sig-font text-4xl text-indigo-900 opacity-90 -rotate-2">Đinh Văn Thành</p>
+            </div>
+          </div>
+          <div className="w-full mt-10 space-y-4">
+            <button onClick={downloadCert} className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black text-xl shadow-xl hover:bg-emerald-700 active:translate-y-1 active:shadow-none transition-all uppercase tracking-widest">Lưu ảnh 💾</button>
+            <button onClick={startQuiz} className="w-full bg-sky-600 text-white py-6 rounded-2xl font-black text-xl shadow-xl hover:bg-sky-700 active:translate-y-1 active:shadow-none transition-all flex flex-col items-center uppercase">
+                <span className="text-[10px] opacity-80 mb-1">Làm mới 10 câu hỏi</span>
+                LUYỆN TẬP TIẾP ⚔️
+            </button>
+            <button onClick={() => window.location.reload()} className="w-full bg-white border-2 border-slate-200 text-slate-400 py-4 rounded-2xl font-black text-sm active:translate-y-1 transition-all uppercase tracking-widest">Về trang chủ 🔄</button>
+          </div>
         </div>
       )}
     </div>

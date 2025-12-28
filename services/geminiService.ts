@@ -22,7 +22,7 @@ export const getAIExtraExplanation = async (question: string, answer: string, un
 };
 
 /**
- * Hàm tạo ảnh thẻ AI sử dụng Gemini 3 Pro Image (hoặc Flash Image làm fallback)
+ * Hàm tạo ảnh thẻ AI sử dụng Gemini 3 Pro Image
  */
 export const beautifyPortrait = async (base64Image: string) => {
   const apiKey = process.env.API_KEY;
@@ -31,14 +31,14 @@ export const beautifyPortrait = async (base64Image: string) => {
     return base64Image;
   }
   
+  // Fixed: Instantiating GoogleGenAI inside the call to ensure current key usage
   const ai = new GoogleGenAI({ apiKey });
   
-  // Xử lý chuỗi base64 để lấy phần data sạch
   const cleanBase64 = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview', // Sử dụng model Pro để xử lý trang phục và khăn quàng chính xác hơn
+      model: 'gemini-3-pro-image-preview',
       contents: {
         parts: [
           { 
@@ -69,7 +69,6 @@ export const beautifyPortrait = async (base64Image: string) => {
       }
     });
     
-    // Kiểm tra và trích xuất phần dữ liệu ảnh từ response
     const candidate = response.candidates?.[0];
     if (candidate && candidate.content && candidate.content.parts) {
       for (const part of candidate.content.parts) {
@@ -82,30 +81,7 @@ export const beautifyPortrait = async (base64Image: string) => {
     throw new Error("No image data found in AI response");
   } catch (error: any) {
     console.error("Beautify Error:", error);
-    
-    // Nếu lỗi "Requested entity was not found" hoặc lỗi model Pro, thử lại với model Flash
-    if (error.message?.includes("not found") || error.message?.includes("model")) {
-      try {
-        const aiFlash = new GoogleGenAI({ apiKey });
-        const retryResponse = await aiFlash.models.generateContent({
-          model: 'gemini-2.5-flash-image',
-          contents: {
-            parts: [
-              { inlineData: { data: cleanBase64, mimeType: 'image/jpeg' } },
-              { text: "Make this a formal student ID photo with white shirt, red scarf, and blue background. Keep original face." }
-            ]
-          }
-        });
-        
-        const part = retryResponse.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-        if (part?.inlineData?.data) {
-          return `data:image/png;base64,${part.inlineData.data}`;
-        }
-      } catch (retryError) {
-        console.error("Retry Error:", retryError);
-      }
-    }
-    
-    return base64Image;
+    // Fixed: Rethrowing the error to let the caller (App.tsx) handle "Requested entity was not found" via key selection prompt as per guidelines
+    throw error;
   }
 };

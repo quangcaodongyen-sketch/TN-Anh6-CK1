@@ -1,70 +1,61 @@
 
-import { Question } from './types';
+import { Question, Difficulty } from './types';
 
-export const POOL_U1_3: Question[] = [
-  { id: 101, unit: "Unit 1", question: "Students ______ their school uniform on Mondays.", options: ["wear", "wears", "wearing"], correctAnswer: 0, explanation: "Chủ ngữ số nhiều 'Students' đi với động từ nguyên mẫu.", },
-  { id: 102, unit: "Unit 1", question: "Look! The students ______ in the playground.", options: ["play", "plays", "are playing"], correctAnswer: 2, explanation: "Thì Hiện tại tiếp diễn (Look!).", },
-  { id: 103, unit: "Unit 2", question: "The cat is ______ the lamp and the computer.", options: ["under", "between", "next to"], correctAnswer: 1, explanation: "Between... and... (ở giữa).", },
-  { id: 104, unit: "Unit 2", question: "There ______ a large cupboard in the kitchen.", options: ["is", "are", "be"], correctAnswer: 0, explanation: "There is + danh từ số ít.", },
-  { id: 105, unit: "Unit 3", question: "Lan is very ______. She always spends a lot of time on her homework.", options: ["kind", "hard-working", "funny"], correctAnswer: 1, explanation: "Chăm chỉ làm bài tập (hard-working).", },
-  { id: 106, unit: "Unit 3", question: "My best friend has ______ hair and a round face.", options: ["short black", "long black", "curly black"], correctAnswer: 0, explanation: "Mô tả ngoại hình chuẩn SGK.", },
-  { id: 107, unit: "Unit 1", question: "Do you ______ your new friends at school?", options: ["like", "likes", "liking"], correctAnswer: 0, explanation: "Động từ nguyên mẫu sau Do.", },
-  { id: 108, unit: "Unit 2", question: "Are there ______ posters on the wall?", options: ["a", "some", "any"], correctAnswer: 2, explanation: "Any dùng trong câu hỏi số nhiều.", },
-  { id: 109, unit: "Unit 3", question: "Phong is ______; he likes to tell jokes.", options: ["clever", "funny", "creative"], correctAnswer: 1, explanation: "Hài hước (funny).", },
-  { id: 110, unit: "Unit 1", question: "We have ______ on Tuesdays.", options: ["English", "history", "science"], correctAnswer: 0, explanation: "Môn học viết hoa.", },
-  { id: 111, unit: "Unit 1", question: "I ______ my homework with my friends in the library.", options: ["do", "make", "play"], correctAnswer: 0, explanation: "Do homework (làm bài tập).", },
-  { id: 112, unit: "Unit 2", question: "My bedroom is ______ the bathroom.", options: ["next to", "at", "on"], correctAnswer: 0, explanation: "Kế bên (next to).", },
-  { id: 113, unit: "Unit 3", question: "She is ______; she creates new things easily.", options: ["active", "creative", "patient"], correctAnswer: 1, explanation: "Sáng tạo (creative).", },
-  { id: 114, unit: "Unit 1", question: "Every day, I ______ to school by bike.", options: ["go", "goes", "going"], correctAnswer: 0, explanation: "Hiện tại đơn (I go).", },
-  { id: 115, unit: "Unit 2", question: "There ______ some chairs in the living room.", options: ["is", "are", "am"], correctAnswer: 1, explanation: "There are + số nhiều.", },
-  { id: 116, unit: "Unit 3", question: "He has a ______ nose and big eyes.", options: ["straight", "long", "tall"], correctAnswer: 0, explanation: "Mũi thẳng (straight nose).", },
-  { id: 117, unit: "Unit 1", question: "The school year ______ on September 5th.", options: ["starts", "start", "starting"], correctAnswer: 0, explanation: "Chủ ngữ số ít (starts).", },
-  { id: 118, unit: "Unit 2", question: "We keep our clothes in a ______.", options: ["cupboard", "wardrobe", "chest of drawers"], correctAnswer: 1, explanation: "Tủ quần áo (wardrobe).", },
-  { id: 119, unit: "Unit 3", question: "My sister is ______. She helps everyone.", options: ["shy", "kind", "confident"], correctAnswer: 1, explanation: "Tốt bụng (kind).", },
-  { id: 120, unit: "Unit 1", question: "What is your ______ subject?", options: ["like", "favourite", "love"], correctAnswer: 1, explanation: "Môn học yêu thích (favourite subject).", }
+const generateSGKQuestions = (difficulty: Difficulty): Question[] => {
+  const data: Partial<Question>[] = [
+    // Unit 1
+    { unit: "Unit 1", question: "At my school, we often ______ judo in the afternoon.", options: ["do", "play", "have", "go"], correctAnswer: 0, explanation: "Cụm từ: do judo." },
+    { unit: "Unit 1", question: "They ______ their school uniform every Monday.", options: ["wear", "wears", "wearing", "to wear"], correctAnswer: 0, explanation: "Hiện tại đơn với They." },
+    { unit: "Unit 1", question: "I like my school. The ______ are very friendly.", options: ["classmates", "homework", "subjects", "calculators"], correctAnswer: 0, explanation: "Bạn cùng lớp (classmates) thân thiện." },
+    
+    // Unit 2
+    { unit: "Unit 2", question: "The cat is ______ the desk and the chair.", options: ["between", "next to", "in front", "under"], correctAnswer: 0, explanation: "Between ... and ... (ở giữa)." },
+    { unit: "Unit 2", question: "We often have dinner in the ______.", options: ["dining room", "bathroom", "attic", "hall"], correctAnswer: 0, explanation: "Dining room: phòng ăn." },
+    { unit: "Unit 2", question: "There ______ a large cupboard in my bedroom.", options: ["is", "are", "be", "am"], correctAnswer: 0, explanation: "There is + danh từ số ít." },
+    
+    // Unit 3
+    { unit: "Unit 3", question: "Phong ______ telling jokes. He is very funny.", options: ["likes", "is liking", "like", "to like"], correctAnswer: 0, explanation: "Hiện tại đơn diễn tả sở thích." },
+    { unit: "Unit 3", question: "She has ______ hair and blue eyes.", options: ["long black", "black long", "short fat", "blue"], correctAnswer: 0, explanation: "Trật tự tính từ: Length -> Color." },
+    { unit: "Unit 3", question: "Look! Mai ______ a book in the library.", options: ["is reading", "reads", "read", "reading"], correctAnswer: 0, explanation: "Hiện tại tiếp diễn với Look!." },
+    
+    // Unit 4
+    { unit: "Unit 4", question: "Is the air in your city ______ than in the countryside?", options: ["more polluted", "polluteder", "most polluted", "polluted"], correctAnswer: 0, explanation: "So sánh hơn của tính từ dài." },
+    { unit: "Unit 4", question: "Go ______ ahead, then turn right.", options: ["straight", "past", "next", "left"], correctAnswer: 0, explanation: "Go straight ahead: đi thẳng." },
+    { unit: "Unit 4", question: "The building is ______ than that one.", options: ["taller", "more tall", "tallest", "the tallest"], correctAnswer: 0, explanation: "So sánh hơn tính từ ngắn." },
+
+    // Unit 5
+    { unit: "Unit 5", question: "You ______ take a waterproof coat. It's raining.", options: ["must", "mustn't", "needn't", "can"], correctAnswer: 0, explanation: "Sự bắt buộc/cần thiết." },
+    { unit: "Unit 5", question: "Ha Long Bay is one of the most famous ______ in Vietnam.", options: ["natural wonders", "deserts", "islands", "caves"], correctAnswer: 0, explanation: "Kỳ quan thiên nhiên." },
+    { unit: "Unit 5", question: "Mount Everest is the ______ mountain in the world.", options: ["highest", "higher", "high", "the highest"], correctAnswer: 0, explanation: "So sánh nhất." },
+
+    // Unit 6
+    { unit: "Unit 6", question: "At Tet, children ______ ask for lucky money.", options: ["shouldn't", "should", "must", "can"], correctAnswer: 0, explanation: "Lời khuyên phong tục." },
+    { unit: "Unit 6", question: "We often ______ our house before Tet holiday.", options: ["decorate", "clean", "sweep", "break"], correctAnswer: 0, explanation: "Decorate: trang trí." },
+    { unit: "Unit 6", question: "Tet is a time for family ______.", options: ["gatherings", "homework", "schooling", "working"], correctAnswer: 0, explanation: "Family gatherings: sum họp gia đình." }
+  ];
+
+  const vocabs: Partial<Question>[] = [
+    { unit: "Vocabulary", question: "What is this? 📏", options: ["Ruler", "Compass", "Pencil", "Rubber"], correctAnswer: 0, explanation: "Ruler: thước kẻ." },
+    { unit: "Vocabulary", question: "Where do we study? 🏫", options: ["School", "Hospital", "Cinema", "Museum"], correctAnswer: 0, explanation: "School: trường học." },
+    { unit: "Vocabulary", question: "What sport is this? ⚽", options: ["Football", "Volleyball", "Judo", "Tennis"], correctAnswer: 0, explanation: "Football: bóng đá." },
+    { unit: "Vocabulary", question: "Guess the room: 🛋️", options: ["Living room", "Kitchen", "Bedroom", "Bathroom"], correctAnswer: 0, explanation: "Living room: phòng khách." }
+  ];
+
+  const pool = [...data, ...vocabs];
+  
+  return pool.map((q, i) => ({
+    id: (difficulty === 'BASIC' ? 100 : difficulty === 'INTERMEDIATE' ? 300 : 500) + i,
+    question: q.question!,
+    options: q.options!,
+    correctAnswer: q.correctAnswer!,
+    explanation: q.explanation!,
+    unit: q.unit!,
+    difficulty
+  }));
+};
+
+export const QUESTIONS = [
+  ...generateSGKQuestions('BASIC'),
+  ...generateSGKQuestions('INTERMEDIATE'),
+  ...generateSGKQuestions('ADVANCED')
 ];
-
-export const POOL_U4_6: Question[] = [
-  { id: 201, unit: "Unit 4", question: "The air in the countryside is ______ than in the city.", options: ["cleaner", "more cleaner", "clean"], correctAnswer: 0, explanation: "So sánh hơn tính từ ngắn.", },
-  { id: 202, unit: "Unit 4", question: "Living in a city is ______ than in the countryside.", options: ["expensive", "more expensive", "expensiver"], correctAnswer: 1, explanation: "So sánh hơn tính từ dài.", },
-  { id: 203, unit: "Unit 5", question: "Fansipan is the ______ mountain in Vietnam.", options: ["high", "higher", "highest"], correctAnswer: 2, explanation: "So sánh nhất tính từ ngắn.", },
-  { id: 204, unit: "Unit 5", question: "You ______ travel alone to the desert.", options: ["must", "mustn't", "should"], correctAnswer: 1, explanation: "Mustn't (không được phép/không nên).", },
-  { id: 205, unit: "Unit 6", question: "Children ______ ask for lucky money at Tet.", options: ["should", "shouldn't", "must"], correctAnswer: 1, explanation: "Shouldn't (không nên - phép lịch sự).", },
-  { id: 206, unit: "Unit 6", question: "We ______ buy peach blossoms for Tet.", options: ["should", "shouldn't", "mustn't"], correctAnswer: 0, explanation: "Should (nên làm).", },
-  { id: 207, unit: "Unit 4", question: "The bakery is ______ to the cinema.", options: ["next", "near", "opposite"], correctAnswer: 0, explanation: "Next to.", },
-  { id: 208, unit: "Unit 4", question: "Take the first ______ on the left.", options: ["turn", "turning", "turned"], correctAnswer: 1, explanation: "Turning (ngã rẽ).", },
-  { id: 209, unit: "Unit 5", question: "Ha Long Bay is a ______ wonder.", options: ["natural", "nature", "naturally"], correctAnswer: 0, explanation: "Natural wonder (kỳ quan thiên nhiên).", },
-  { id: 210, unit: "Unit 5", question: "Pack a ______ because it's sunny.", options: ["sun hat", "sleeping bag", "coat"], correctAnswer: 0, explanation: "Sun hat (mũ che nắng).", },
-  { id: 211, unit: "Unit 6", question: "Vietnamese ______ their houses before Tet.", options: ["decorate", "decorates", "decorating"], correctAnswer: 0, explanation: "Decorate (trang trí).", },
-  { id: 212, unit: "Unit 6", question: "We ______ our relatives at Tet.", options: ["visit", "visiting", "visits"], correctAnswer: 0, explanation: "Visit (thăm hỏi).", },
-  { id: 213, unit: "Unit 4", question: "The streets are ______ during rush hour.", options: ["quiet", "busy", "peaceful"], correctAnswer: 1, explanation: "Busy (đông đúc).", },
-  { id: 214, unit: "Unit 5", question: "Is Ba Be Lake the ______ lake in Vietnam?", options: ["largest", "larger", "large"], correctAnswer: 0, explanation: "So sánh nhất.", },
-  { id: 215, unit: "Unit 6", question: "We ______ special food like Banh Chung.", options: ["cook", "make", "eat"], correctAnswer: 0, explanation: "Cook (nấu nướng).", },
-  { id: 216, unit: "Unit 4", question: "Can you tell me the ______ to the post office?", options: ["way", "road", "street"], correctAnswer: 0, explanation: "The way (đường đi).", },
-  { id: 217, unit: "Unit 5", question: "A ______ is a large area of water surrounded by land.", options: ["river", "lake", "island"], correctAnswer: 1, explanation: "Lake (hồ).", },
-  { id: 218, unit: "Unit 6", question: "People give ______ to children.", options: ["lucky money", "flowers", "candy"], correctAnswer: 0, explanation: "Lucky money (tiền lì xì).", },
-  { id: 219, unit: "Unit 4", question: "The city is ______ than the village.", options: ["noisier", "more noisy", "noisy"], correctAnswer: 0, explanation: "Noisier (ồn ào hơn).", },
-  { id: 220, unit: "Unit 5", question: "You ______ bring a compass in the forest.", options: ["must", "mustn't", "need"], correctAnswer: 0, explanation: "Must (bắt buộc).", },
-  { id: 221, unit: "Unit 6", question: "Tet is a time for family ______.", options: ["reunion", "party", "holiday"], correctAnswer: 0, explanation: "Family reunion (đoàn tụ).", },
-  { id: 222, unit: "Unit 4", question: "My neighbourhood is very ______.", options: ["peaceful", "peace", "peacing"], correctAnswer: 0, explanation: "Peaceful (yên bình).", },
-  { id: 223, unit: "Unit 5", question: "Which is the ______ island in the world?", options: ["largest", "larger", "large"], correctAnswer: 0, explanation: "So sánh nhất.", },
-  { id: 224, unit: "Unit 6", question: "We ______ break things during Tet.", options: ["shouldn't", "should", "must"], correctAnswer: 0, explanation: "Shouldn't break (không nên làm vỡ).", },
-  { id: 225, unit: "Unit 4", question: "The park is ______ the school.", options: ["opposite", "at", "in"], correctAnswer: 0, explanation: "Opposite (đối diện).", },
-  { id: 226, unit: "Unit 5", question: "Mount Everest is the ______ in the world.", options: ["highest", "tallest", "biggest"], correctAnswer: 0, explanation: "Highest (cao nhất).", },
-  { id: 227, unit: "Unit 6", question: "I ______ will go to my hometown.", options: ["probably", "maybe", "can"], correctAnswer: 0, explanation: "Probably (có lẽ).", },
-  { id: 228, unit: "Unit 4", question: "It's ______ to live in a suburb.", options: ["better", "gooder", "well"], correctAnswer: 0, explanation: "Better (tốt hơn - so sánh hơn của good).", },
-  { id: 229, unit: "Unit 5", question: "You ______ bring waterproof clothes.", options: ["must", "should", "can"], correctAnswer: 1, explanation: "Should (nên mang theo).", },
-  { id: 230, unit: "Unit 6", question: "We often ______ firework displays at Tet.", options: ["watch", "see", "look"], correctAnswer: 0, explanation: "Watch firework (xem pháo hoa).", },
-  { id: 231, unit: "Unit 4", question: "Is the supermarket ______?", options: ["convenient", "near", "far"], correctAnswer: 0, explanation: "Convenient (tiện lợi).", },
-  { id: 232, unit: "Unit 5", question: "Don't forget the ______ cream.", options: ["sun", "sunblock", "sunny"], correctAnswer: 1, explanation: "Sunblock cream (kem chống nắng).", },
-  { id: 233, unit: "Unit 6", question: "Tet is the most ______ holiday.", options: ["important", "good", "happy"], correctAnswer: 0, explanation: "Important (quan trọng).", },
-  { id: 234, unit: "Unit 4", question: "Go along the street, it's on your ______.", options: ["right", "correct", "straight"], correctAnswer: 0, explanation: "On your right (bên phải em).", },
-  { id: 235, unit: "Unit 5", question: "We should ______ the environment.", options: ["protect", "save", "keep"], correctAnswer: 0, explanation: "Protect (bảo vệ).", },
-  { id: 236, unit: "Unit 6", question: "Children get ______ from adults.", options: ["lucky money", "books", "toys"], correctAnswer: 0, explanation: "Lì xì.", },
-  { id: 237, unit: "Unit 4", question: "My house is ______ to the park.", options: ["next", "near", "opposite"], correctAnswer: 0, explanation: "Next to.", },
-  { id: 238, unit: "Unit 5", question: "A ______ is a dry place with little water.", options: ["desert", "forest", "mountain"], correctAnswer: 0, explanation: "Desert (sa mạc).", },
-  { id: 239, unit: "Unit 6", question: "We should ______ our house before Tet.", options: ["clean", "wash", "fix"], correctAnswer: 0, explanation: "Clean house (dọn dẹp nhà).", },
-  { id: 240, unit: "Unit 4", question: "Is your city ______?", options: ["noisy", "noise", "noising"], correctAnswer: 0, explanation: "Tính từ noisy.", }
-];
-
-export const QUESTIONS = [...POOL_U1_3, ...POOL_U4_6];

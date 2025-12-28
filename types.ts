@@ -1,4 +1,6 @@
 
+export type Difficulty = 'BASIC' | 'INTERMEDIATE' | 'ADVANCED';
+
 export interface Question {
   id: number;
   question: string;
@@ -6,6 +8,7 @@ export interface Question {
   correctAnswer: number;
   explanation: string;
   unit: string;
+  difficulty: Difficulty;
 }
 
 export type QuizState = 'START' | 'QUIZ' | 'RESULT';
